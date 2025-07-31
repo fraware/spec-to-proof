@@ -1,6 +1,19 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { QueryClient } from '@tanstack/react-query';
+import { initTRPC } from '@trpc/server';
+import { z } from 'zod';
+
+// Initialize tRPC for server-side
+const t = initTRPC.create();
+
+// Export server-side procedures
+export const createTRPCRouter = t.router;
+export const publicProcedure = t.procedure;
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+  // Add authentication logic here if needed
+  return next({ ctx });
+});
 
 // Define the tRPC router type
 export type AppRouter = {
@@ -149,4 +162,28 @@ export function handleTRPCError(error: any): TRPCError {
     500,
     error
   );
+<<<<<<< Current (Your changes)
 } 
+=======
+}
+
+// Server-side tRPC exports for testing and server implementations
+export const createTRPCRouter = (routes: any) => routes;
+export const publicProcedure = {
+  input: (schema: any) => ({
+    output: (schema: any) => ({
+      query: (fn: any) => fn,
+      mutation: (fn: any) => fn,
+    }),
+    query: (fn: any) => fn,
+    mutation: (fn: any) => fn,
+  }),
+  output: (schema: any) => ({
+    query: (fn: any) => fn,
+    mutation: (fn: any) => fn,
+  }),
+  query: (fn: any) => fn,
+  mutation: (fn: any) => fn,
+};
+export const protectedProcedure = publicProcedure; 
+>>>>>>> Incoming (Background Agent changes)

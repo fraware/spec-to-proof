@@ -2,7 +2,7 @@
 
 A secure, horizontally scalable Kubernetes job runner for Lean theorem proving with production-grade security guarantees.
 
-## 🚀 Features
+## Features
 
 - **Horizontal Scaling**: Scale to 500+ pods with automatic load balancing
 - **Security First**: gVisor runtime, seccomp restrictions, rootless execution
@@ -12,7 +12,7 @@ A secure, horizontally scalable Kubernetes job runner for Lean theorem proving w
 - **Monitoring**: Prometheus metrics and health checks
 - **OSS Scanning**: Zero critical vulnerabilities requirement
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -31,7 +31,7 @@ A secure, horizontally scalable Kubernetes job runner for Lean theorem proving w
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🔒 Security Features
+## Security Features
 
 ### Runtime Security
 - **gVisor Runtime**: Syscall isolation for enhanced security
@@ -53,7 +53,7 @@ A secure, horizontally scalable Kubernetes job runner for Lean theorem proving w
 - **SBOM Generation**: Software bill of materials
 - **License Compliance**: Automated license checking
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -127,7 +127,7 @@ storage:
     bucket: "proof-artifacts"
 ```
 
-## 🔧 Development
+## Development
 
 ### Building from Source
 
@@ -159,7 +159,7 @@ cargo test
 cargo test --test integration_test
 ```
 
-## 📊 Monitoring
+## Monitoring
 
 ### Health Checks
 
@@ -191,7 +191,7 @@ Import the provided Grafana dashboard JSON to monitor:
 - Queue metrics
 - Security events
 
-## 🧪 Testing
+## Testing
 
 ### Unit Tests
 ```bash
@@ -214,7 +214,7 @@ cargo test --test integration_test
 k6 run tests/load-test.js
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -255,7 +255,7 @@ kubectl set env deployment/lean-farm -n spec-to-proof RUST_LOG=debug
 kubectl logs -n spec-to-proof deployment/lean-farm -f
 ```
 
-## 📈 Performance
+## Performance
 
 ### Benchmarks
 
@@ -269,40 +269,3 @@ kubectl logs -n spec-to-proof deployment/lean-farm -f
 - **Minimum**: 500m CPU, 1Gi memory per pod
 - **Recommended**: 2 CPU, 4Gi memory per pod
 - **Storage**: 10GB temporary storage per pod
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Run security benchmark
-6. Submit a pull request
-
-### Development Guidelines
-
-- Follow Rust coding standards
-- Add comprehensive tests
-- Update documentation
-- Run security benchmarks
-- Ensure zero critical vulnerabilities
-
-## 📄 License
-
-Apache License 2.0 - see [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Issues**: [GitHub Issues](https://github.com/spec-to-proof/lean-farm/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/spec-to-proof/lean-farm/discussions)
-- **Security**: [Security Policy](SECURITY.md)
-
-## 🔗 Related Projects
-
-- [Spec-to-Proof Platform](https://github.com/spec-to-proof/platform)
-- [Lean Theorem Prover](https://leanprover.github.io/)
-- [gVisor Runtime](https://gvisor.dev/)
-
----
-
-**Note**: This is a production-grade implementation with strict security requirements. Always run security benchmarks before deployment. 

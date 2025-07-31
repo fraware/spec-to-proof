@@ -14,12 +14,12 @@ Spec-to-Proof automatically extracts hidden invariants from plain English specif
 
 ### Key Features
 
-- 🔗 **Multi-Platform Integration**: Connect to Jira, Confluence, and Google Docs
-- 🤖 **AI-Powered Extraction**: Claude 3 Opus extracts invariants from plain English
-- ✅ **Formal Verification**: Lean 4 generates machine-checked proofs
-- 🛡️ **GitHub Integration**: Automatic PR badges with cryptographic signatures
-- 📊 **Real-time Coverage**: Dashboard mapping user stories to formal guarantees
-- 🔄 **Drift Detection**: Automatic re-verification when specs change
+- **Multi-Platform Integration**: Connect to Jira, Confluence, and Google Docs
+- **AI-Powered Extraction**: Claude 3 Opus extracts invariants from plain English
+- **Formal Verification**: Lean 4 generates machine-checked proofs
+- **GitHub Integration**: Automatic PR badges with cryptographic signatures
+- **Real-time Coverage**: Dashboard mapping user stories to formal guarantees
+- **Drift Detection**: Automatic re-verification when specs change
 
 ## Architecture
 
@@ -208,21 +208,3 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/fraware/spec-to-proof/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/fraware/spec-to-proof/discussions)
-
-## Roadmap
-
-- [ ] **v1.0.0**: Core functionality with Jira integration
-- [ ] **v1.1.0**: Confluence and Google Docs connectors
-- [ ] **v1.2.0**: Advanced NLP with custom training
-- [ ] **v2.0.0**: Multi-language proof generation
-- [ ] **v2.1.0**: Enterprise features and compliance
-
----
-
-**Spec-to-Proof**: Where specifications become proofs, and "should" becomes "will." 

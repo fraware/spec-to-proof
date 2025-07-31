@@ -37,7 +37,7 @@
     "@tailwindcss/aspect-ratio": "^0.1.0",
     "@tailwindcss/forms": "^0.5.0",
     "@tailwindcss/typography": "^0.5.0",
-    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^14.0.0",
     "@types/bcryptjs": "^2.4.0",
     "@types/jest": "^30.0.0",
@@ -68,12 +68,29 @@
       "<rootDir>/jest.setup.js"
     ],
     "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/platform/ui/src/$1"
+      "^@/(.*)$": "<rootDir>/platform/ui/src/$1",
+      "^@/types/(.*)$": "<rootDir>/platform/ui/src/types/$1",
+      "^@/lib/(.*)$": "<rootDir>/platform/ui/src/lib/$1",
+      "^@/components/(.*)$": "<rootDir>/platform/ui/src/components/$1"
     },
     "transform": {
+<<<<<<< Current (Your changes)
       "^.+\\.(ts|tsx)$": ["ts-jest", {
-        "tsconfig": "platform/ui/tsconfig.json"
+        "tsconfig": "platform/ui/tsconfig.jest.json"
       }]
+=======
+      "^.+\\.(ts|tsx)$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "jsx": "react-jsx",
+            "esModuleInterop": true,
+            "allowSyntheticDefaultImports": true,
+            "moduleResolution": "node"
+          }
+        }
+      ]
+>>>>>>> Incoming (Background Agent changes)
     },
     "testMatch": [
       "**/__tests__/**/*.(ts|tsx)",
@@ -83,12 +100,7 @@
       "platform/ui/src/**/*.{ts,tsx}",
       "!platform/ui/src/**/*.d.ts"
     ],
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"],
-    "globals": {
-      "ts-jest": {
-        "tsconfig": "platform/ui/tsconfig.json"
-      }
-    }
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"]
   },
   "engines": {
     "node": ">=20.0.0",
