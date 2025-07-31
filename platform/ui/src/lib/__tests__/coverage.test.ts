@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from '@jest/globals';
 import { CoverageCalculator, CoverageMetrics } from '../coverage';
 
 // Mock data for testing

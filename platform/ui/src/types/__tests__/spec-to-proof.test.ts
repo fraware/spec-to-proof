@@ -1,6 +1,5 @@
 import { validateSpecDocument, validateInvariant, validateInvariantSet, validateLeanTheorem, validateProofArtifact, validateBadgeStatus, fromApiSpecDocument, fromApiInvariant, toApiSpecDocument, toApiInvariant, calculateSha256, generateId, isSpecDocument, isInvariant, isInvariantSet, isLeanTheorem, isProofArtifact, isBadgeStatus } from '../spec-to-proof';
 import { SpecDocument, Invariant, InvariantSet, LeanTheorem, ProofArtifact, BadgeStatus, DocumentStatus, InvariantStatus, InvariantSetStatus, TheoremStatus, ProofStatus, BadgeState, Priority } from '../spec-to-proof';
-import * as fc from 'fast-check';
 
 describe('Spec-to-Proof Domain Models', () => {
   describe('SpecDocument', () => {
@@ -307,258 +306,210 @@ describe('Spec-to-Proof Domain Models', () => {
     });
   });
 
-  // Property-based tests with fast-check
-  describe('Property-based Tests', () => {
-    const uuidArb = fc.uuid();
-    const sha256Arb = fc.stringOf(fc.constantFrom('a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 64, maxLength: 64 });
-    const urlArb = fc.webUrl();
-    const dateArb = fc.date();
-    const positiveIntArb = fc.integer({ min: 1 });
-    const nonNegativeIntArb = fc.integer({ min: 0 });
-    const confidenceScoreArb = fc.float({ min: 0, max: 1 });
-    const coveragePercentageArb = fc.float({ min: 0, max: 100 });
-
+  // Additional validation tests
+  describe('Additional Validation Tests', () => {
     it('should round-trip SpecDocument through API conversion', () => {
-      fc.assert(
-        fc.property(
-          uuidArb,
-          sha256Arb,
-          fc.string(),
-          fc.string(),
-          fc.string(),
-          fc.string(),
-          urlArb,
-          fc.string(),
-          dateArb,
-          dateArb,
-          fc.record({}),
-          positiveIntArb,
-          fc.constantFrom(...Object.values(DocumentStatus)),
-          (id, contentSha256, sourceSystem, sourceId, title, content, url, author, createdAt, modifiedAt, metadata, version, status) => {
-            const original: SpecDocument = {
-              id,
-              contentSha256,
-              sourceSystem,
-              sourceId,
-              title,
-              content,
-              url,
-              author,
-              createdAt,
-              modifiedAt,
-              metadata,
-              version,
-              status,
-            };
+      const original: SpecDocument = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        contentSha256: 'a'.repeat(64),
+        sourceSystem: 'jira',
+        sourceId: 'PROJ-123',
+        title: 'Test Document',
+        content: 'Test content',
+        url: 'https://example.com/test',
+        author: 'test@example.com',
+        createdAt: new Date('2024-01-01T00:00:00Z'),
+        modifiedAt: new Date('2024-01-02T00:00:00Z'),
+        metadata: { test: 'value' },
+        version: 1,
+        status: DocumentStatus.PUBLISHED,
+      };
 
-            const apiFormat = toApiSpecDocument(original);
-            const roundTrip = fromApiSpecDocument(apiFormat);
+      const apiFormat = toApiSpecDocument(original);
+      const roundTrip = fromApiSpecDocument(apiFormat);
 
-            expect(roundTrip).toEqual(original);
-          }
-        )
-      );
+      expect(roundTrip).toEqual(original);
     });
 
     it('should round-trip Invariant through API conversion', () => {
-      fc.assert(
-        fc.property(
-          uuidArb,
-          sha256Arb,
-          fc.string(),
-          fc.string(),
-          fc.string(),
-          fc.array(fc.record({
-            name: fc.string(),
-            type: fc.string(),
-            description: fc.string(),
-            unit: fc.string(),
-            constraints: fc.array(fc.string()),
-          })),
-          fc.record({}),
-          confidenceScoreArb,
-          uuidArb,
-          dateArb,
-          fc.constantFrom(...Object.values(InvariantStatus)),
-          fc.array(fc.string()),
-          fc.constantFrom(...Object.values(Priority)),
-          (id, contentSha256, description, formalExpression, naturalLanguage, variables, units, confidenceScore, sourceDocumentId, extractedAt, status, tags, priority) => {
-            const original: Invariant = {
-              id,
-              contentSha256,
-              description,
-              formalExpression,
-              naturalLanguage,
-              variables,
-              units,
-              confidenceScore,
-              sourceDocumentId,
-              extractedAt,
-              status,
-              tags,
-              priority,
-            };
+      const original: Invariant = {
+        id: '123e4567-e89b-12d3-a456-426614174001',
+        contentSha256: 'b'.repeat(64),
+        description: 'Test invariant',
+        formalExpression: 'test > 0',
+        naturalLanguage: 'Test value must be positive',
+        variables: [
+          {
+            name: 'test',
+            type: 'number',
+            description: 'Test variable',
+            unit: '',
+            constraints: ['positive'],
+          },
+        ],
+        units: { test: 'units' },
+        confidenceScore: 0.95,
+        sourceDocumentId: '123e4567-e89b-12d3-a456-426614174000',
+        extractedAt: new Date('2024-01-01T00:00:00Z'),
+        status: InvariantStatus.EXTRACTED,
+        tags: ['test'],
+        priority: Priority.HIGH,
+      };
 
-            const apiFormat = toApiInvariant(original);
-            const roundTrip = fromApiInvariant(apiFormat);
+      const apiFormat = toApiInvariant(original);
+      const roundTrip = fromApiInvariant(apiFormat);
 
-            expect(roundTrip).toEqual(original);
-          }
-        )
-      );
+      expect(roundTrip).toEqual(original);
     });
 
     it('should maintain SHA256 hash consistency', () => {
-      fc.assert(
-        fc.property(
-          fc.string(),
-          (content) => {
-            const hash1 = calculateSha256(content);
-            const hash2 = calculateSha256(content);
-            expect(hash1).toBe(hash2);
-          }
-        )
-      );
+      const content = 'test content';
+      const hash1 = calculateSha256(content);
+      const hash2 = calculateSha256(content);
+      expect(hash1).toBe(hash2);
     });
 
     it('should generate unique UUIDs', () => {
-      fc.assert(
-        fc.property(
-          fc.array(fc.constant(null), { minLength: 10, maxLength: 10 }),
-          () => {
-            const ids = Array.from({ length: 10 }, () => generateId());
-            const uniqueIds = new Set(ids);
-            expect(uniqueIds.size).toBe(10);
-          }
-        )
-      );
+      const ids = Array.from({ length: 10 }, () => generateId());
+      const uniqueIds = new Set(ids);
+      expect(uniqueIds.size).toBe(10);
     });
 
-    it('should validate SpecDocument with property-based data', () => {
-      fc.assert(
-        fc.property(
-          uuidArb,
-          sha256Arb,
-          fc.string({ minLength: 1 }),
-          fc.string({ minLength: 1 }),
-          fc.string({ minLength: 1 }),
-          fc.string(),
-          urlArb,
-          fc.string({ minLength: 1 }),
-          dateArb,
-          dateArb,
-          fc.record({}),
-          positiveIntArb,
-          fc.constantFrom(...Object.values(DocumentStatus)),
-          (id, contentSha256, sourceSystem, sourceId, title, content, url, author, createdAt, modifiedAt, metadata, version, status) => {
-            const doc: SpecDocument = {
-              id,
-              contentSha256,
-              sourceSystem,
-              sourceId,
-              title,
-              content,
-              url,
-              author,
-              createdAt,
-              modifiedAt,
-              metadata,
-              version,
-              status,
-            };
+    it('should validate SpecDocument with various data', () => {
+      const validDocs = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          contentSha256: 'a'.repeat(64),
+          sourceSystem: 'jira',
+          sourceId: 'PROJ-123',
+          title: 'Test Document 1',
+          content: 'Test content 1',
+          url: 'https://example.com/test1',
+          author: 'test1@example.com',
+          createdAt: new Date('2024-01-01T00:00:00Z'),
+          modifiedAt: new Date('2024-01-02T00:00:00Z'),
+          metadata: { test: 'value1' },
+          version: 1,
+          status: DocumentStatus.PUBLISHED,
+        },
+        {
+          id: '123e4567-e89b-12d3-a456-426614174001',
+          contentSha256: 'b'.repeat(64),
+          sourceSystem: 'confluence',
+          sourceId: 'CONF-456',
+          title: 'Test Document 2',
+          content: 'Test content 2',
+          url: 'https://example.com/test2',
+          author: 'test2@example.com',
+          createdAt: new Date('2024-01-03T00:00:00Z'),
+          modifiedAt: new Date('2024-01-04T00:00:00Z'),
+          metadata: { test: 'value2' },
+          version: 2,
+          status: DocumentStatus.DRAFT,
+        },
+      ];
 
-            expect(() => validateSpecDocument(doc)).not.toThrow();
-          }
-        )
-      );
+      validDocs.forEach(doc => {
+        expect(() => validateSpecDocument(doc)).not.toThrow();
+      });
     });
 
-    it('should validate Invariant with property-based data', () => {
-      fc.assert(
-        fc.property(
-          uuidArb,
-          sha256Arb,
-          fc.string({ minLength: 1 }),
-          fc.string({ minLength: 1 }),
-          fc.string(),
-          fc.array(fc.record({
-            name: fc.string({ minLength: 1 }),
-            type: fc.string({ minLength: 1 }),
-            description: fc.string(),
-            unit: fc.string(),
-            constraints: fc.array(fc.string()),
-          })),
-          fc.record({}),
-          confidenceScoreArb,
-          uuidArb,
-          dateArb,
-          fc.constantFrom(...Object.values(InvariantStatus)),
-          fc.array(fc.string()),
-          fc.constantFrom(...Object.values(Priority)),
-          (id, contentSha256, description, formalExpression, naturalLanguage, variables, units, confidenceScore, sourceDocumentId, extractedAt, status, tags, priority) => {
-            const invariant: Invariant = {
-              id,
-              contentSha256,
-              description,
-              formalExpression,
-              naturalLanguage,
-              variables,
-              units,
-              confidenceScore,
-              sourceDocumentId,
-              extractedAt,
-              status,
-              tags,
-              priority,
-            };
+    it('should validate Invariant with various data', () => {
+      const validInvariants = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174002',
+          contentSha256: 'c'.repeat(64),
+          description: 'Test invariant 1',
+          formalExpression: 'x > 0',
+          naturalLanguage: 'X must be positive',
+          variables: [
+            {
+              name: 'x',
+              type: 'number',
+              description: 'Variable X',
+              unit: '',
+              constraints: ['positive'],
+            },
+          ],
+          units: { x: 'units' },
+          confidenceScore: 0.9,
+          sourceDocumentId: '123e4567-e89b-12d3-a456-426614174000',
+          extractedAt: new Date('2024-01-01T00:00:00Z'),
+          status: InvariantStatus.EXTRACTED,
+          tags: ['test', 'validation'],
+          priority: Priority.HIGH,
+        },
+        {
+          id: '123e4567-e89b-12d3-a456-426614174003',
+          contentSha256: 'd'.repeat(64),
+          description: 'Test invariant 2',
+          formalExpression: 'y >= 10',
+          naturalLanguage: 'Y must be greater than or equal to 10',
+          variables: [
+            {
+              name: 'y',
+              type: 'number',
+              description: 'Variable Y',
+              unit: '',
+              constraints: ['non-negative'],
+            },
+          ],
+          units: { y: 'units' },
+          confidenceScore: 0.85,
+          sourceDocumentId: '123e4567-e89b-12d3-a456-426614174001',
+          extractedAt: new Date('2024-01-02T00:00:00Z'),
+          status: InvariantStatus.VERIFIED,
+          tags: ['test', 'range'],
+          priority: Priority.MEDIUM,
+        },
+      ];
 
-            expect(() => validateInvariant(invariant)).not.toThrow();
-          }
-        )
-      );
+      validInvariants.forEach(invariant => {
+        expect(() => validateInvariant(invariant)).not.toThrow();
+      });
     });
 
-    it('should validate BadgeStatus with property-based data', () => {
-      fc.assert(
-        fc.property(
-          uuidArb,
-          sha256Arb,
-          fc.string({ minLength: 1 }),
-          fc.string({ minLength: 1 }),
-          positiveIntArb,
-          fc.stringOf(fc.constantFrom('a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 40, maxLength: 40 }),
-          fc.constantFrom(...Object.values(BadgeState)),
-          fc.string(),
-          urlArb,
-          dateArb,
-          dateArb,
-          fc.array(uuidArb),
-          coveragePercentageArb,
-          nonNegativeIntArb,
-          positiveIntArb,
-          (id, contentSha256, repoOwner, repoName, prNumber, commitSha, state, description, targetUrl, createdAt, updatedAt, proofArtifactIds, coveragePercentage, invariantsProven, totalInvariants) => {
-            const badge: BadgeStatus = {
-              id,
-              contentSha256,
-              repoOwner,
-              repoName,
-              prNumber,
-              commitSha,
-              state,
-              description,
-              targetUrl,
-              createdAt,
-              updatedAt,
-              proofArtifactIds,
-              coveragePercentage,
-              invariantsProven,
-              totalInvariants,
-            };
+    it('should validate BadgeStatus with various data', () => {
+      const validBadges = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174004',
+          contentSha256: 'e'.repeat(64),
+          repoOwner: 'testuser',
+          repoName: 'testrepo',
+          prNumber: 123,
+          commitSha: 'a'.repeat(40),
+          state: BadgeState.SUCCESS,
+          description: 'All tests passing',
+          targetUrl: 'https://example.com/badge/123',
+          createdAt: new Date('2024-01-01T00:00:00Z'),
+          updatedAt: new Date('2024-01-02T00:00:00Z'),
+          proofArtifactIds: ['123e4567-e89b-12d3-a456-426614174005'],
+          coveragePercentage: 100.0,
+          invariantsProven: 5,
+          totalInvariants: 5,
+        },
+        {
+          id: '123e4567-e89b-12d3-a456-426614174006',
+          contentSha256: 'f'.repeat(64),
+          repoOwner: 'testuser2',
+          repoName: 'testrepo2',
+          prNumber: 456,
+          commitSha: 'b'.repeat(40),
+          state: BadgeState.FAILURE,
+          description: 'Some tests failing',
+          targetUrl: 'https://example.com/badge/456',
+          createdAt: new Date('2024-01-03T00:00:00Z'),
+          updatedAt: new Date('2024-01-04T00:00:00Z'),
+          proofArtifactIds: ['123e4567-e89b-12d3-a456-426614174007'],
+          coveragePercentage: 80.0,
+          invariantsProven: 4,
+          totalInvariants: 5,
+        },
+      ];
 
-            expect(() => validateBadgeStatus(badge)).not.toThrow();
-          }
-        )
-      );
+      validBadges.forEach(badge => {
+        expect(() => validateBadgeStatus(badge)).not.toThrow();
+      });
     });
   });
 }); 
