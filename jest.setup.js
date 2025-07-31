@@ -60,4 +60,67 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
+}));
+
+// Mock crypto.randomUUID for test environment
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: () => {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    },
+  },
+});
+
+// Mock tRPC client
+jest.mock('@/lib/trpc', () => ({
+  trpc: {
+    invariant: {
+      list: {
+        useQuery: jest.fn(() => ({
+          data: { invariants: [], total: 0, hasMore: false },
+          isLoading: false,
+          error: null,
+        })),
+      },
+      update: {
+        useMutation: jest.fn(() => ({
+          mutate: jest.fn(),
+          isLoading: false,
+          error: null,
+        })),
+      },
+      split: {
+        useMutation: jest.fn(() => ({
+          mutate: jest.fn(),
+          isLoading: false,
+          error: null,
+        })),
+      },
+      rename: {
+        useMutation: jest.fn(() => ({
+          mutate: jest.fn(),
+          isLoading: false,
+          error: null,
+        })),
+      },
+      confirm: {
+        useMutation: jest.fn(() => ({
+          mutate: jest.fn(),
+          isLoading: false,
+          error: null,
+        })),
+      },
+      reject: {
+        useMutation: jest.fn(() => ({
+          mutate: jest.fn(),
+          isLoading: false,
+          error: null,
+        })),
+      },
+    },
+  },
 })); 

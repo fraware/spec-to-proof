@@ -296,27 +296,27 @@ export function generateId(): string {
 }
 
 export function validateSpecDocument(doc: unknown): SpecDocument {
-  return SpecDocumentSchema.parse(doc);
+  return SpecDocumentSchema.parse(doc) as SpecDocument;
 }
 
 export function validateInvariant(invariant: unknown): Invariant {
-  return InvariantSchema.parse(invariant);
+  return InvariantSchema.parse(invariant) as Invariant;
 }
 
 export function validateInvariantSet(set: unknown): InvariantSet {
-  return InvariantSetSchema.parse(set);
+  return InvariantSetSchema.parse(set) as InvariantSet;
 }
 
 export function validateLeanTheorem(theorem: unknown): LeanTheorem {
-  return LeanTheoremSchema.parse(theorem);
+  return LeanTheoremSchema.parse(theorem) as LeanTheorem;
 }
 
 export function validateProofArtifact(artifact: unknown): ProofArtifact {
-  return ProofArtifactSchema.parse(artifact);
+  return ProofArtifactSchema.parse(artifact) as ProofArtifact;
 }
 
 export function validateBadgeStatus(badge: unknown): BadgeStatus {
-  return BadgeStatusSchema.parse(badge);
+  return BadgeStatusSchema.parse(badge) as BadgeStatus;
 }
 
 // Type guards
