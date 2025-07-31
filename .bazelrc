@@ -1,6 +1,5 @@
 # Build optimizations
 build --enable_platform_specific_config
-build --incompatible_require_python_info_provider=false
 build --incompatible_strict_action_env
 build --incompatible_use_python_toolchains=false
 
