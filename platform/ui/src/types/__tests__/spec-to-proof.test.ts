@@ -458,7 +458,7 @@ describe('Spec-to-Proof Domain Models', () => {
           confidenceScore: 0.85,
           sourceDocumentId: '123e4567-e89b-12d3-a456-426614174001',
           extractedAt: new Date('2024-01-02T00:00:00Z'),
-          status: InvariantStatus.VERIFIED,
+          status: InvariantStatus.CONFIRMED,
           tags: ['test', 'range'],
           priority: Priority.MEDIUM,
         },
