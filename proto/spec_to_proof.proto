@@ -1,0 +1,490 @@
+syntax = "proto3";
+
+package spec_to_proof.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+option go_package = "github.com/fraware/spec-to-proof/proto";
+option java_multiple_files = true;
+option java_package = "com.fraware.spec_to_proof.v1";
+
+// SpecDocument represents a specification document from any source (Jira, Confluence, Google Docs)
+message SpecDocument {
+  // Unique identifier for the document
+  string id = 1;
+  
+  // SHA256 hash of the document content for content-based addressing
+  string content_sha256 = 2;
+  
+  // Source system identifier (e.g., "jira", "confluence", "google_docs")
+  string source_system = 3;
+  
+  // Original document ID in the source system
+  string source_id = 4;
+  
+  // Document title
+  string title = 5;
+  
+  // Document content (markdown or plain text)
+  string content = 6;
+  
+  // Document URL in the source system
+  string url = 7;
+  
+  // Author/creator of the document
+  string author = 8;
+  
+  // When the document was created
+  google.protobuf.Timestamp created_at = 9;
+  
+  // When the document was last modified
+  google.protobuf.Timestamp modified_at = 10;
+  
+  // Document metadata as key-value pairs
+  map<string, string> metadata = 11;
+  
+  // Version of the document
+  int32 version = 12;
+  
+  // Status of the document (draft, published, archived)
+  DocumentStatus status = 13;
+}
+
+enum DocumentStatus {
+  DOCUMENT_STATUS_UNSPECIFIED = 0;
+  DOCUMENT_STATUS_DRAFT = 1;
+  DOCUMENT_STATUS_PUBLISHED = 2;
+  DOCUMENT_STATUS_ARCHIVED = 3;
+}
+
+// Invariant represents a formal invariant extracted from a specification
+message Invariant {
+  // Unique identifier for the invariant
+  string id = 1;
+  
+  // SHA256 hash of the invariant content for content-based addressing
+  string content_sha256 = 2;
+  
+  // Human-readable description of the invariant
+  string description = 3;
+  
+  // Formal mathematical expression of the invariant
+  string formal_expression = 4;
+  
+  // Natural language description
+  string natural_language = 5;
+  
+  // Variables used in the invariant
+  repeated Variable variables = 6;
+  
+  // Units for the variables (if applicable)
+  map<string, string> units = 7;
+  
+  // Confidence score from the NLP extraction (0.0 to 1.0)
+  double confidence_score = 8;
+  
+  // Source document reference
+  string source_document_id = 9;
+  
+  // When the invariant was extracted
+  google.protobuf.Timestamp extracted_at = 10;
+  
+  // Status of the invariant
+  InvariantStatus status = 11;
+  
+  // Tags for categorization
+  repeated string tags = 12;
+  
+  // Priority level (low, medium, high, critical)
+  Priority priority = 13;
+}
+
+enum InvariantStatus {
+  INVARIANT_STATUS_UNSPECIFIED = 0;
+  INVARIANT_STATUS_EXTRACTED = 1;
+  INVARIANT_STATUS_CONFIRMED = 2;
+  INVARIANT_STATUS_REJECTED = 3;
+  INVARIANT_STATUS_PROVEN = 4;
+  INVARIANT_STATUS_FAILED = 5;
+}
+
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_LOW = 1;
+  PRIORITY_MEDIUM = 2;
+  PRIORITY_HIGH = 3;
+  PRIORITY_CRITICAL = 4;
+}
+
+// Variable represents a variable used in an invariant
+message Variable {
+  // Variable name
+  string name = 1;
+  
+  // Variable type (int, float, string, bool, etc.)
+  string type = 2;
+  
+  // Variable description
+  string description = 3;
+  
+  // Unit of measurement (if applicable)
+  string unit = 4;
+  
+  // Constraints on the variable
+  repeated string constraints = 5;
+}
+
+// InvariantSet represents a collection of related invariants
+message InvariantSet {
+  // Unique identifier for the invariant set
+  string id = 1;
+  
+  // SHA256 hash of the invariant set content
+  string content_sha256 = 2;
+  
+  // Name of the invariant set
+  string name = 3;
+  
+  // Description of the invariant set
+  string description = 4;
+  
+  // Invariants in this set
+  repeated Invariant invariants = 5;
+  
+  // Source document references
+  repeated string source_document_ids = 6;
+  
+  // When the invariant set was created
+  google.protobuf.Timestamp created_at = 7;
+  
+  // When the invariant set was last modified
+  google.protobuf.Timestamp modified_at = 8;
+  
+  // Status of the invariant set
+  InvariantSetStatus status = 9;
+}
+
+enum InvariantSetStatus {
+  INVARIANT_SET_STATUS_UNSPECIFIED = 0;
+  INVARIANT_SET_STATUS_DRAFT = 1;
+  INVARIANT_SET_STATUS_REVIEW = 2;
+  INVARIANT_SET_STATUS_APPROVED = 3;
+  INVARIANT_SET_STATUS_PROVEN = 4;
+  INVARIANT_SET_STATUS_FAILED = 5;
+}
+
+// LeanTheorem represents a Lean 4 theorem generated from an invariant
+message LeanTheorem {
+  // Unique identifier for the theorem
+  string id = 1;
+  
+  // SHA256 hash of the theorem content
+  string content_sha256 = 2;
+  
+  // Theorem name in Lean
+  string theorem_name = 3;
+  
+  // Full Lean 4 code for the theorem
+  string lean_code = 4;
+  
+  // Source invariant reference
+  string source_invariant_id = 6;
+  
+  // When the theorem was generated
+  google.protobuf.Timestamp generated_at = 7;
+  
+  // Status of the theorem
+  TheoremStatus status = 8;
+  
+  // Compilation errors (if any)
+  repeated string compilation_errors = 9;
+  
+  // Proof strategy used
+  string proof_strategy = 10;
+  
+  // Metadata about the theorem
+  map<string, string> metadata = 11;
+}
+
+enum TheoremStatus {
+  THEOREM_STATUS_UNSPECIFIED = 0;
+  THEOREM_STATUS_GENERATED = 1;
+  THEOREM_STATUS_COMPILING = 2;
+  THEOREM_STATUS_COMPILED = 3;
+  THEOREM_STATUS_PROVING = 4;
+  THEOREM_STATUS_PROVEN = 5;
+  THEOREM_STATUS_FAILED = 6;
+}
+
+// ProofArtifact represents the result of a proof attempt
+message ProofArtifact {
+  // Unique identifier for the proof artifact
+  string id = 1;
+  
+  // SHA256 hash of the proof artifact content
+  string content_sha256 = 2;
+  
+  // Reference to the theorem being proven
+  string theorem_id = 3;
+  
+  // Reference to the invariant being proven
+  string invariant_id = 4;
+  
+  // Proof status
+  ProofStatus status = 5;
+  
+  // When the proof was attempted
+  google.protobuf.Timestamp attempted_at = 6;
+  
+  // How long the proof took (in milliseconds)
+  int64 duration_ms = 7;
+  
+  // Proof output (success or error messages)
+  string output = 8;
+  
+  // Proof logs
+  repeated string logs = 9;
+  
+  // Resource usage during proof
+  ResourceUsage resource_usage = 10;
+  
+  // Proof strategy used
+  string proof_strategy = 11;
+  
+  // Confidence score of the proof (0.0 to 1.0)
+  double confidence_score = 12;
+  
+  // Metadata about the proof
+  map<string, string> metadata = 13;
+}
+
+enum ProofStatus {
+  PROOF_STATUS_UNSPECIFIED = 0;
+  PROOF_STATUS_PENDING = 1;
+  PROOF_STATUS_RUNNING = 2;
+  PROOF_STATUS_SUCCESS = 3;
+  PROOF_STATUS_FAILED = 4;
+  PROOF_STATUS_TIMEOUT = 5;
+  PROOF_STATUS_ERROR = 6;
+}
+
+// ResourceUsage represents resource consumption during proof
+message ResourceUsage {
+  // CPU usage in seconds
+  double cpu_seconds = 1;
+  
+  // Memory usage in bytes
+  int64 memory_bytes = 2;
+  
+  // Disk usage in bytes
+  int64 disk_bytes = 3;
+  
+  // Network usage in bytes
+  int64 network_bytes = 4;
+}
+
+// BadgeStatus represents the status badge for a GitHub PR
+message BadgeStatus {
+  // Unique identifier for the badge
+  string id = 1;
+  
+  // SHA256 hash of the badge content
+  string content_sha256 = 2;
+  
+  // GitHub repository owner
+  string repo_owner = 3;
+  
+  // GitHub repository name
+  string repo_name = 4;
+  
+  // Pull request number
+  int32 pr_number = 5;
+  
+  // Commit SHA
+  string commit_sha = 6;
+  
+  // Badge status
+  BadgeState state = 7;
+  
+  // Badge description
+  string description = 8;
+  
+  // Target URL for the badge
+  string target_url = 9;
+  
+  // When the badge was created
+  google.protobuf.Timestamp created_at = 10;
+  
+  // When the badge was last updated
+  google.protobuf.Timestamp updated_at = 11;
+  
+  // Related proof artifacts
+  repeated string proof_artifact_ids = 12;
+  
+  // Coverage percentage
+  double coverage_percentage = 13;
+  
+  // Number of invariants proven
+  int32 invariants_proven = 14;
+  
+  // Total number of invariants
+  int32 total_invariants = 15;
+}
+
+enum BadgeState {
+  BADGE_STATE_UNSPECIFIED = 0;
+  BADGE_STATE_PENDING = 1;
+  BADGE_STATE_SUCCESS = 2;
+  BADGE_STATE_FAILURE = 3;
+  BADGE_STATE_ERROR = 4;
+}
+
+// Service definitions for gRPC
+service SpecToProofService {
+  // Document management
+  rpc CreateSpecDocument(CreateSpecDocumentRequest) returns (SpecDocument);
+  rpc GetSpecDocument(GetSpecDocumentRequest) returns (SpecDocument);
+  rpc UpdateSpecDocument(UpdateSpecDocumentRequest) returns (SpecDocument);
+  rpc DeleteSpecDocument(DeleteSpecDocumentRequest) returns (DeleteSpecDocumentResponse);
+  rpc ListSpecDocuments(ListSpecDocumentsRequest) returns (ListSpecDocumentsResponse);
+  
+  // Invariant management
+  rpc CreateInvariant(CreateInvariantRequest) returns (Invariant);
+  rpc GetInvariant(GetInvariantRequest) returns (Invariant);
+  rpc UpdateInvariant(UpdateInvariantRequest) returns (Invariant);
+  rpc DeleteInvariant(DeleteInvariantRequest) returns (DeleteInvariantResponse);
+  rpc ListInvariants(ListInvariantsRequest) returns (ListInvariantsResponse);
+  
+  // Theorem management
+  rpc CreateLeanTheorem(CreateLeanTheoremRequest) returns (LeanTheorem);
+  rpc GetLeanTheorem(GetLeanTheoremRequest) returns (LeanTheorem);
+  rpc ListLeanTheorems(ListLeanTheoremsRequest) returns (ListLeanTheoremsResponse);
+  
+  // Proof management
+  rpc CreateProofArtifact(CreateProofArtifactRequest) returns (ProofArtifact);
+  rpc GetProofArtifact(GetProofArtifactRequest) returns (ProofArtifact);
+  rpc ListProofArtifacts(ListProofArtifactsRequest) returns (ListProofArtifactsResponse);
+  
+  // Badge management
+  rpc CreateBadgeStatus(CreateBadgeStatusRequest) returns (BadgeStatus);
+  rpc GetBadgeStatus(GetBadgeStatusRequest) returns (BadgeStatus);
+  rpc UpdateBadgeStatus(UpdateBadgeStatusRequest) returns (BadgeStatus);
+}
+
+// Request/Response messages for gRPC service
+message CreateSpecDocumentRequest {
+  SpecDocument document = 1;
+}
+
+message GetSpecDocumentRequest {
+  string id = 1;
+}
+
+message UpdateSpecDocumentRequest {
+  SpecDocument document = 1;
+}
+
+message DeleteSpecDocumentRequest {
+  string id = 1;
+}
+
+message DeleteSpecDocumentResponse {
+  bool success = 1;
+}
+
+message ListSpecDocumentsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string filter = 3;
+}
+
+message ListSpecDocumentsResponse {
+  repeated SpecDocument documents = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message CreateInvariantRequest {
+  Invariant invariant = 1;
+}
+
+message GetInvariantRequest {
+  string id = 1;
+}
+
+message UpdateInvariantRequest {
+  Invariant invariant = 1;
+}
+
+message DeleteInvariantRequest {
+  string id = 1;
+}
+
+message DeleteInvariantResponse {
+  bool success = 1;
+}
+
+message ListInvariantsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string filter = 3;
+}
+
+message ListInvariantsResponse {
+  repeated Invariant invariants = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message CreateLeanTheoremRequest {
+  LeanTheorem theorem = 1;
+}
+
+message GetLeanTheoremRequest {
+  string id = 1;
+}
+
+message ListLeanTheoremsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string filter = 3;
+}
+
+message ListLeanTheoremsResponse {
+  repeated LeanTheorem theorems = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message CreateProofArtifactRequest {
+  ProofArtifact artifact = 1;
+}
+
+message GetProofArtifactRequest {
+  string id = 1;
+}
+
+message ListProofArtifactsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string filter = 3;
+}
+
+message ListProofArtifactsResponse {
+  repeated ProofArtifact artifacts = 1;
+  string next_page_token = 2;
+  int32 total_size = 3;
+}
+
+message CreateBadgeStatusRequest {
+  BadgeStatus badge = 1;
+}
+
+message GetBadgeStatusRequest {
+  string id = 1;
+}
+
+message UpdateBadgeStatusRequest {
+  BadgeStatus badge = 1;
+} 

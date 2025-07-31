@@ -1,0 +1,32 @@
+{{- if .Values.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "lean-farm.fullname" . }}
+  labels:
+    {{- include "lean-farm.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "lean-farm.fullname" . }}
+  minReplicas: {{ .Values.hpa.minReplicas | default 10 }}
+  maxReplicas: {{ .Values.hpa.maxReplicas | default 500 }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.hpa.targetCPUUtilizationPercentage | default 70 }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.hpa.targetMemoryUtilizationPercentage | default 80 }}
+  {{- if .Values.hpa.behavior }}
+  behavior:
+    {{- toYaml .Values.hpa.behavior | nindent 4 }}
+  {{- end }}
+{{- end }} 

@@ -1,0 +1,371 @@
+# Spec-to-Proof Platform Helm Chart Values
+# This file contains all configurable values for the spec-to-proof platform
+
+# Global configuration
+global:
+  environment: production
+  domain: spec-to-proof.your-domain.com
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+  annotations: {}
+  labels: {}
+
+# Image configuration with semantic versioning
+images:
+  leanFarm:
+    repository: your-registry/lean-farm
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  nlp:
+    repository: your-registry/nlp
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  ingest:
+    repository: your-registry/ingest
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  proof:
+    repository: your-registry/proof
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  platform:
+    repository: your-registry/platform
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  ui:
+    repository: your-registry/ui
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  hosts:
+    - host: spec-to-proof.your-domain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: spec-to-proof-tls
+      hosts:
+        - spec-to-proof.your-domain.com
+
+# Lean Farm configuration
+leanFarm:
+  enabled: true
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+  security:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    dropAllCapabilities: true
+  containerSecurity:
+    seccompProfile: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  service:
+    type: ClusterIP
+    port: 8080
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# NLP Service configuration
+nlp:
+  enabled: true
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  claude:
+    apiKey: ""
+    model: claude-3-sonnet-20240229
+    maxTokens: 4000
+    temperature: 0.1
+  cache:
+    enabled: true
+    ttlSeconds: 3600
+  service:
+    type: ClusterIP
+    port: 50051
+
+# Ingest Service configuration
+ingest:
+  enabled: true
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  connectors:
+    jira:
+      enabled: true
+      pollIntervalSeconds: 300
+    confluence:
+      enabled: true
+      pollIntervalSeconds: 300
+    gdocs:
+      enabled: true
+      pollIntervalSeconds: 300
+  service:
+    type: ClusterIP
+    port: 8080
+
+# Proof Service configuration
+proof:
+  enabled: true
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+  lean:
+    version: "4.7.0"
+    timeoutSeconds: 1800
+  storage:
+    s3Bucket: spec-to-proof-proofs
+    region: us-west-2
+  service:
+    type: ClusterIP
+    port: 8080
+
+# Platform (GitHub App) configuration
+platform:
+  enabled: true
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  github:
+    appId: ""
+    privateKey: ""
+    webhookSecret: ""
+    installationId: ""
+  sigstore:
+    rekorUrl: https://rekor.sigstore.dev
+    fulcioUrl: https://fulcio.sigstore.dev
+    oidcIssuer: https://oauth2.sigstore.dev/auth
+  service:
+    type: ClusterIP
+    port: 8080
+
+# UI configuration
+ui:
+  enabled: true
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  service:
+    type: ClusterIP
+    port: 3000
+
+# Database configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: ""
+    database: spec_to_proof
+    username: spec_to_proof
+    password: ""
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: ""
+  readReplicas:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: ""
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: ""
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+
+# NATS configuration
+nats:
+  enabled: true
+  nats:
+    jetstream:
+      enabled: true
+      memStorage:
+        enabled: true
+        size: 10Gi
+      fileStorage:
+        enabled: true
+        size: 50Gi
+        storageDirectory: /data/jetstream
+  cluster:
+    enabled: true
+    replicas: 3
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  prometheus:
+    retention: 30d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ""
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+  grafana:
+    adminPassword: ""
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ""
+
+# Security configuration
+security:
+  # Pod Security Standards
+  podSecurityStandards:
+    enabled: true
+    level: restricted
+  # Network policies
+  networkPolicies:
+    enabled: true
+  # RBAC
+  rbac:
+    enabled: true
+    create: true
+  # Service accounts
+  serviceAccounts:
+    create: true
+    annotations: {}
+  # Pod disruption budget
+  pdb:
+    enabled: true
+    minAvailable: 1
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 30
+  s3:
+    bucket: spec-to-proof-backups
+    region: us-west-2
+    endpoint: ""
+
+# Logging configuration
+logging:
+  level: info
+  format: json
+  retention: 30d
+  fluentd:
+    enabled: false
+    config: ""
+
+# Resource quotas
+resourceQuotas:
+  enabled: true
+  cpu: "8"
+  memory: "16Gi"
+  persistentVolumeClaims: "10"
+  services: "20"
+  servicesLoadBalancers: "2"
+  servicesNodePorts: "10"
+
+# Node selectors and affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Annotations and labels
+podAnnotations: {}
+podLabels: {}
+serviceAnnotations: {}
+serviceLabels: {}
+
+# Secrets management
+secrets:
+  # AWS credentials for S3 access
+  aws:
+    accessKeyId: ""
+    secretAccessKey: ""
+    region: us-west-2
+  # OAuth2 credentials for connectors
+  oauth2:
+    jira:
+      clientId: ""
+      clientSecret: ""
+    confluence:
+      clientId: ""
+      clientSecret: ""
+    gdocs:
+      clientId: ""
+      clientSecret: ""
+
+# Feature flags
+features:
+  # Enable/disable specific features
+  proofGeneration: true
+  invariantExtraction: true
+  documentIngestion: true
+  githubIntegration: true
+  sigstoreVerification: true
+  complianceAuditing: true
+  performanceMonitoring: true 

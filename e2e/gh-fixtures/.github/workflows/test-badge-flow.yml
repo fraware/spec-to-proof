@@ -1,0 +1,327 @@
+name: Test Badge Flow
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      test_scenario:
+        description: 'Test scenario to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - valid-specs
+          - invalid-specs
+          - no-specs
+          - spec-updates
+
+jobs:
+  test-badge-flow:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scenario: ${{ github.event.inputs.test_scenario || 'all' }}
+        include:
+          - scenario: valid-specs
+            description: "Test with valid spec documents"
+          - scenario: invalid-specs
+            description: "Test with invalid spec documents"
+          - scenario: no-specs
+            description: "Test with no spec documents"
+          - scenario: spec-updates
+            description: "Test spec document updates"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test environment
+        run: |
+          echo "Setting up test environment for scenario: ${{ matrix.scenario }}"
+          
+          # Create test data directory
+          mkdir -p test-data
+          
+          # Copy scenario-specific test data
+          cp tests/fixtures/${{ matrix.scenario }}/* test-data/ || true
+          
+          # Set up environment variables
+          echo "GH_APP_WEBHOOK_URL=${{ secrets.GH_APP_WEBHOOK_URL }}" >> $GITHUB_ENV
+          echo "GH_APP_WEBHOOK_SECRET=${{ secrets.GH_APP_WEBHOOK_SECRET }}" >> $GITHUB_ENV
+          echo "TEST_SCENARIO=${{ matrix.scenario }}" >> $GITHUB_ENV
+
+      - name: Run badge flow tests
+        run: |
+          echo "Running badge flow tests for scenario: ${{ matrix.scenario }}"
+          
+          # Run the specific test scenario
+          npm run test:badge-flow:${{ matrix.scenario }}
+          
+          # Generate test report
+          npm run test:report
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.scenario }}
+          path: |
+            test-results/
+            coverage/
+            logs/
+
+      - name: Comment test results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = `## Badge Flow Test Results
+            
+            **Scenario**: ${{ matrix.scenario }}
+            **Description**: ${{ matrix.description }}
+            
+            ### Test Summary
+            `;
+            
+            try {
+              const results = JSON.parse(fs.readFileSync('test-results/summary.json', 'utf8'));
+              comment += `
+              - ✅ Passed: ${results.passed}
+              - ❌ Failed: ${results.failed}
+              - ⏱️ Duration: ${results.duration}ms
+              `;
+            } catch (e) {
+              comment += `
+              - ⚠️ Test results not available
+              `;
+            }
+            
+            comment += `
+            ### Next Steps
+            - [ ] Review badge status updates
+            - [ ] Verify branch protection behavior
+            - [ ] Check Sigstore integration
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: test-badge-flow
+    if: matrix.scenario == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests"
+          
+          # Start mock GitHub App server
+          npm run test:server:start &
+          SERVER_PID=$!
+          
+          # Wait for server to start
+          sleep 10
+          
+          # Run integration tests
+          npm run test:integration
+          
+          # Stop server
+          kill $SERVER_PID
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            integration-results/
+            coverage/
+
+  performance-test:
+    runs-on: ubuntu-latest
+    needs: test-badge-flow
+    if: matrix.scenario == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run performance tests
+        run: |
+          echo "Running performance tests"
+          
+          # Run load tests
+          npm run test:performance
+          
+          # Generate performance report
+          npm run test:performance:report
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            performance-results/
+            benchmarks/
+
+  security-test:
+    runs-on: ubuntu-latest
+    needs: test-badge-flow
+    if: matrix.scenario == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security tests
+        run: |
+          echo "Running security tests"
+          
+          # Run security scans
+          npm audit
+          npm run test:security
+          
+          # Check for vulnerabilities
+          npm run test:security:check
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-test-results
+          path: |
+            security-results/
+            audit-reports/
+
+  report:
+    runs-on: ubuntu-latest
+    needs: [test-badge-flow, integration-test, performance-test, security-test]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          path: test-artifacts
+
+      - name: Generate comprehensive report
+        run: |
+          echo "Generating comprehensive test report"
+          
+          # Combine all test results
+          npm run test:report:comprehensive
+          
+          # Generate HTML report
+          npm run test:report:html
+
+      - name: Upload comprehensive report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-test-report
+          path: |
+            reports/
+            coverage/
+
+      - name: Comment comprehensive results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = `## Comprehensive Test Report
+            
+            ### Test Results Summary
+            `;
+            
+            try {
+              const summary = JSON.parse(fs.readFileSync('reports/summary.json', 'utf8'));
+              comment += `
+              - ✅ Badge Flow Tests: ${summary.badgeFlow.passed}/${summary.badgeFlow.total}
+              - ✅ Integration Tests: ${summary.integration.passed}/${summary.integration.total}
+              - ✅ Performance Tests: ${summary.performance.passed}/${summary.performance.total}
+              - ✅ Security Tests: ${summary.security.passed}/${summary.security.total}
+              `;
+            } catch (e) {
+              comment += `
+              - ⚠️ Test results not available
+              `;
+            }
+            
+            comment += `
+            ### Coverage
+            - Overall Coverage: ${process.env.COVERAGE_PERCENT || 'N/A'}%
+            - Badge Flow Coverage: ${process.env.BADGE_FLOW_COVERAGE || 'N/A'}%
+            
+            ### Performance Metrics
+            - Average Response Time: ${process.env.AVG_RESPONSE_TIME || 'N/A'}ms
+            - 95th Percentile: ${process.env.P95_RESPONSE_TIME || 'N/A'}ms
+            - Throughput: ${process.env.THROUGHPUT || 'N/A'} req/s
+            
+            ### Security Status
+            - Vulnerabilities: ${process.env.SECURITY_VULNERABILITIES || 'N/A'}
+            - Compliance: ${process.env.SECURITY_COMPLIANCE || 'N/A'}
+            
+            [📊 View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            }); 

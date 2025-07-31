@@ -1,0 +1,72 @@
+{{- if .Values.leanFarm.enabled }}
+---
+{{- include "spec-to-proof.componentService" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.nlp.enabled }}
+---
+{{- include "spec-to-proof.componentService" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.ingest.enabled }}
+---
+{{- include "spec-to-proof.componentService" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.proof.enabled }}
+---
+{{- include "spec-to-proof.componentService" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.platform.enabled }}
+---
+{{- include "spec-to-proof.componentService" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.ui.enabled }}
+---
+{{- include "spec-to-proof.componentService" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "spec-to-proof.ingressName" . }}
+  labels:
+    {{- include "spec-to-proof.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- range .Values.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "spec-to-proof.componentServiceName" (dict "component" "ui" "Values" $.Values "Release" $.Release "Chart" $.Chart) }}
+                port:
+                  number: {{ $.Values.ui.service.port | default 3000 }}
+          {{- end }}
+    {{- end }}
+{{- end }} 

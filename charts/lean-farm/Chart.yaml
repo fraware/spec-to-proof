@@ -1,0 +1,20 @@
+apiVersion: v2
+name: lean-farm
+description: A horizontally scalable Kubernetes job runner for Lean theorem proving
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - lean
+  - theorem-proving
+  - formal-verification
+  - proof-farm
+home: https://github.com/spec-to-proof/lean-farm
+sources:
+  - https://github.com/spec-to-proof/lean-farm
+maintainers:
+  - name: Spec-to-Proof Team
+    email: team@spec-to-proof.com
+annotations:
+  category: Infrastructure
+  licenses: Apache-2.0 

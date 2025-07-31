@@ -1,0 +1,244 @@
+# Lean Farm Configuration
+# A horizontally scalable Kubernetes job runner for Lean theorem proving
+
+# Global configuration
+global:
+  environment: production
+  clusterDomain: cluster.local
+
+# Image configuration
+image:
+  repository: lean-farm
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+  # Security: Use semantic versioning, never latest
+  digest: ""  # Will be set during build
+
+# Security configuration
+security:
+  # Use gVisor for syscall isolation
+  runtimeClass: gvisor
+  # Seccomp profile for syscall restrictions
+  seccompProfile:
+    type: RuntimeDefault
+  # Rootless execution
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  # Read-only root filesystem
+  readOnlyRootFilesystem: true
+  # Drop all capabilities
+  capabilities:
+    drop:
+      - ALL
+  # Security context for containers
+  allowPrivilegeEscalation: false
+  privileged: false
+
+# Resource configuration
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+  # Guarantee ≥ 99.9% availability
+  guaranteed: true
+
+# Horizontal Pod Autoscaler configuration
+hpa:
+  enabled: true
+  minReplicas: 10
+  maxReplicas: 500
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  # Scaling behavior for stability
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 5
+        periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+        periodSeconds: 15
+      selectPolicy: Max
+
+# Job configuration
+job:
+  # Job timeout (5 minutes)
+  activeDeadlineSeconds: 300
+  # Backoff limit for retries
+  backoffLimit: 2
+  # TTL for completed jobs (cleanup after 1 hour)
+  ttlSecondsAfterFinished: 3600
+  # Parallel job processing
+  parallelism: 50
+  completions: 50
+
+# Storage configuration
+storage:
+  # S3 configuration for code bundles
+  s3:
+    bucket: "spec-to-proof-lean"
+    region: "us-east-1"
+    keyPrefix: "theorems/"
+    # Read-only mount
+    readOnly: true
+  # MinIO for proof artifacts
+  minio:
+    endpoint: "minio.spec-to-proof.svc.cluster.local:9000"
+    bucket: "proof-artifacts"
+    accessKey: ""
+    secretKey: ""
+    # Use TLS
+    secure: true
+
+# Monitoring configuration
+monitoring:
+  # Prometheus metrics
+  metrics:
+    enabled: true
+    port: 9090
+    path: /metrics
+  # Health checks
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Network configuration
+network:
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  # Ingress configuration (if needed)
+  ingress:
+    enabled: false
+    className: nginx
+    annotations: {}
+    hosts: []
+
+# Logging configuration
+logging:
+  level: info
+  format: json
+  # Structured logging for observability
+  structured: true
+  # Log rotation
+  maxSize: 100Mi
+  maxFiles: 5
+
+# Environment variables
+env:
+  # Lean configuration
+  LEAN_VERSION: "4.7.0"
+  LAKE_BUILD_TIMEOUT: "300"
+  # Security configuration
+  LEAN_FARM_SECURE: "true"
+  LEAN_FARM_ISOLATED: "true"
+  # Resource limits
+  LEAN_FARM_CPU_LIMIT: "2"
+  LEAN_FARM_MEMORY_LIMIT: "4Gi"
+  # Network isolation
+  LEAN_FARM_NETWORK_POLICY: "restricted"
+
+# Pod disruption budget for high availability
+pdb:
+  enabled: true
+  minAvailable: 1
+  maxUnavailable: 25%
+
+# Node affinity for optimal placement
+nodeAffinity:
+  requiredDuringSchedulingIgnoredDuringExecution:
+    nodeSelectorTerms:
+    - matchExpressions:
+      - key: kubernetes.io/os
+        operator: In
+        values:
+        - linux
+      - key: node.kubernetes.io/instance-type
+        operator: In
+        values:
+        - m5.large
+        - m5.xlarge
+        - m5.2xlarge
+        - c5.large
+        - c5.xlarge
+        - c5.2xlarge
+
+# Tolerations for dedicated nodes
+tolerations:
+- key: "dedicated"
+  operator: "Equal"
+  value: "lean-farm"
+  effect: "NoSchedule"
+
+# Pod security standards
+podSecurity:
+  # Pod Security Standards - Restricted
+  seccompProfile:
+    type: RuntimeDefault
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+
+# Network policies for isolation
+networkPolicy:
+  enabled: true
+  # Deny all ingress by default
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: spec-to-proof
+      ports:
+        - protocol: TCP
+          port: 8080
+  # Allow egress to S3 and MinIO
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 9000 

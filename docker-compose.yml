@@ -1,0 +1,349 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: spec-to-proof-postgres
+    environment:
+      POSTGRES_DB: spec_to_proof
+      POSTGRES_USER: spec_to_proof
+      POSTGRES_PASSWORD: spec_to_proof_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spec_to_proof"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: spec-to-proof-redis
+    command: redis-server --requirepass redis_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # NATS for messaging
+  nats:
+    image: nats:2.9-alpine
+    container_name: spec-to-proof-nats
+    command: nats-server --jetstream --mem_storage 1G --file_storage 5G
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8222/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # Lean Farm service
+  lean-farm:
+    image: your-registry/lean-farm:1.0.0
+    container_name: spec-to-proof-lean-farm
+    environment:
+      - LEAN_FARM_CONFIG_PATH=/etc/lean-farm/config.yaml
+      - LEAN_FARM_LOG_LEVEL=info
+      - LEAN_FARM_LOG_FORMAT=json
+      - LEAN_FARM_METRICS_PORT=9090
+      - LEAN_FARM_METRICS_PATH=/metrics
+      - LEAN_VERSION=4.7.0
+      - LEAN_TIMEOUT_SECONDS=1800
+      - S3_BUCKET=spec-to-proof-proofs
+      - AWS_REGION=us-west-2
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=spec_to_proof
+      - POSTGRES_USER=spec_to_proof
+      - POSTGRES_PASSWORD=spec_to_proof_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_password
+      - NATS_URL=nats://nats:4222
+    volumes:
+      - ./config/lean-farm.yaml:/etc/lean-farm/config.yaml:ro
+      - lean_farm_data:/data
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # NLP service
+  nlp:
+    image: your-registry/nlp:1.0.0
+    container_name: spec-to-proof-nlp
+    environment:
+      - NLP_LOG_LEVEL=info
+      - NLP_LOG_FORMAT=json
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - CLAUDE_MODEL=claude-3-sonnet-20240229
+      - CLAUDE_MAX_TOKENS=4000
+      - CLAUDE_TEMPERATURE=0.1
+      - CACHE_TTL_SECONDS=3600
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=spec_to_proof
+      - POSTGRES_USER=spec_to_proof
+      - POSTGRES_PASSWORD=spec_to_proof_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_password
+    ports:
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:50051"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # Ingest service
+  ingest:
+    image: your-registry/ingest:1.0.0
+    container_name: spec-to-proof-ingest
+    environment:
+      - INGEST_LOG_LEVEL=info
+      - INGEST_LOG_FORMAT=json
+      - JIRA_POLL_INTERVAL_SECONDS=300
+      - CONFLUENCE_POLL_INTERVAL_SECONDS=300
+      - GDOCS_POLL_INTERVAL_SECONDS=300
+      - JIRA_CLIENT_ID=${JIRA_CLIENT_ID}
+      - JIRA_CLIENT_SECRET=${JIRA_CLIENT_SECRET}
+      - CONFLUENCE_CLIENT_ID=${CONFLUENCE_CLIENT_ID}
+      - CONFLUENCE_CLIENT_SECRET=${CONFLUENCE_CLIENT_SECRET}
+      - GDOCS_CLIENT_ID=${GDOCS_CLIENT_ID}
+      - GDOCS_CLIENT_SECRET=${GDOCS_CLIENT_SECRET}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=spec_to_proof
+      - POSTGRES_USER=spec_to_proof
+      - POSTGRES_PASSWORD=spec_to_proof_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_password
+      - NATS_URL=nats://nats:4222
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # Proof service
+  proof:
+    image: your-registry/proof:1.0.0
+    container_name: spec-to-proof-proof
+    environment:
+      - PROOF_LOG_LEVEL=info
+      - PROOF_LOG_FORMAT=json
+      - LEAN_VERSION=4.7.0
+      - LEAN_TIMEOUT_SECONDS=1800
+      - S3_BUCKET=spec-to-proof-proofs
+      - AWS_REGION=us-west-2
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=spec_to_proof
+      - POSTGRES_USER=spec_to_proof
+      - POSTGRES_PASSWORD=spec_to_proof_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_password
+      - NATS_URL=nats://nats:4222
+    volumes:
+      - proof_data:/data
+    ports:
+      - "8082:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # Platform (GitHub App) service
+  platform:
+    image: your-registry/platform:1.0.0
+    container_name: spec-to-proof-platform
+    environment:
+      - PLATFORM_LOG_LEVEL=info
+      - PLATFORM_LOG_FORMAT=json
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_INSTALLATION_ID=${GITHUB_INSTALLATION_ID}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY}
+      - SIGSTORE_REKOR_URL=https://rekor.sigstore.dev
+      - SIGSTORE_FULCIO_URL=https://fulcio.sigstore.dev
+      - SIGSTORE_OIDC_ISSUER=https://oauth2.sigstore.dev/auth
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=spec_to_proof
+      - POSTGRES_USER=spec_to_proof
+      - POSTGRES_PASSWORD=spec_to_proof_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_password
+      - NATS_URL=nats://nats:4222
+    ports:
+      - "8083:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # UI service
+  ui:
+    image: your-registry/ui:1.0.0
+    container_name: spec-to-proof-ui
+    environment:
+      - UI_LOG_LEVEL=info
+      - UI_LOG_FORMAT=json
+      - NEXT_PUBLIC_API_URL=http://platform:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spec-to-proof-network
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: spec-to-proof-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - lean-farm
+      - nlp
+      - ingest
+      - proof
+      - platform
+      - ui
+    networks:
+      - spec-to-proof-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: spec-to-proof-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - spec-to-proof-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nats_data:
+    driver: local
+  lean_farm_data:
+    driver: local
+  proof_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  spec-to-proof-network:
+    driver: bridge 

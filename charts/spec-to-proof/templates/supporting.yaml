@@ -1,0 +1,256 @@
+{{- if .Values.leanFarm.enabled }}
+---
+{{- include "spec-to-proof.componentHPA" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+---
+{{- include "spec-to-proof.componentPDB" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.nlp.enabled }}
+---
+{{- include "spec-to-proof.componentHPA" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+---
+{{- include "spec-to-proof.componentPDB" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.ingest.enabled }}
+---
+{{- include "spec-to-proof.componentHPA" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+---
+{{- include "spec-to-proof.componentPDB" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.proof.enabled }}
+---
+{{- include "spec-to-proof.componentHPA" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+---
+{{- include "spec-to-proof.componentPDB" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.platform.enabled }}
+---
+{{- include "spec-to-proof.componentHPA" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+---
+{{- include "spec-to-proof.componentPDB" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.ui.enabled }}
+---
+{{- include "spec-to-proof.componentHPA" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) }}
+---
+{{- include "spec-to-proof.componentPDB" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.security.networkPolicies.enabled }}
+{{- if .Values.leanFarm.enabled }}
+---
+{{- include "spec-to-proof.componentNetworkPolicy" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.nlp.enabled }}
+---
+{{- include "spec-to-proof.componentNetworkPolicy" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.ingest.enabled }}
+---
+{{- include "spec-to-proof.componentNetworkPolicy" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.proof.enabled }}
+---
+{{- include "spec-to-proof.componentNetworkPolicy" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.platform.enabled }}
+---
+{{- include "spec-to-proof.componentNetworkPolicy" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+
+{{- if .Values.ui.enabled }}
+---
+{{- include "spec-to-proof.componentNetworkPolicy" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.resourceQuotas.enabled }}
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "spec-to-proof.fullname" . }}-quota
+  labels:
+    {{- include "spec-to-proof.labels" . | nindent 4 }}
+spec:
+  hard:
+    requests.cpu: {{ .Values.resourceQuotas.cpu }}
+    requests.memory: {{ .Values.resourceQuotas.memory }}
+    limits.cpu: {{ .Values.resourceQuotas.cpu }}
+    limits.memory: {{ .Values.resourceQuotas.memory }}
+    persistentvolumeclaims: {{ .Values.resourceQuotas.persistentVolumeClaims }}
+    services: {{ .Values.resourceQuotas.services }}
+    services.loadbalancers: {{ .Values.resourceQuotas.servicesLoadBalancers }}
+    services.nodeports: {{ .Values.resourceQuotas.servicesNodePorts }}
+{{- end }}
+
+{{- if .Values.backup.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "spec-to-proof.fullname" . }}-backup
+  labels:
+    {{- include "spec-to-proof.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "spec-to-proof.serviceAccountName" . }}
+          containers:
+            - name: backup
+              image: {{ .Values.images.backup.repository }}:{{ .Values.images.backup.tag }}
+              imagePullPolicy: {{ include "spec-to-proof.imagePullPolicy" . }}
+              env:
+                - name: BACKUP_S3_BUCKET
+                  value: {{ .Values.backup.s3.bucket }}
+                - name: AWS_REGION
+                  value: {{ .Values.backup.s3.region }}
+                {{- if .Values.backup.s3.endpoint }}
+                - name: AWS_ENDPOINT
+                  value: {{ .Values.backup.s3.endpoint }}
+                {{- end }}
+                {{- if .Values.secrets.aws }}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "spec-to-proof.secretName" . }}
+                      key: aws-access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "spec-to-proof.secretName" . }}
+                      key: aws-secret-access-key
+                {{- end }}
+                - name: BACKUP_RETENTION_DAYS
+                  value: {{ .Values.backup.retention | quote }}
+              {{- include "spec-to-proof.componentResources" (dict "component" "backup" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 14 }}
+          restartPolicy: OnFailure
+{{- end }}
+
+{{- if .Values.monitoring.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "spec-to-proof.fullname" . }}-prometheus-config
+  labels:
+    {{- include "spec-to-proof.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - "alerting_rules.yml"
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - alertmanager:9093
+
+    scrape_configs:
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+      - job_name: 'spec-to-proof-lean-farm'
+        static_configs:
+          - targets: ['{{ include "spec-to-proof.componentServiceName" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}:9090']
+
+      - job_name: 'spec-to-proof-nlp'
+        static_configs:
+          - targets: ['{{ include "spec-to-proof.componentServiceName" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}:{{ .Values.nlp.service.port | default 50051 }}']
+
+      - job_name: 'spec-to-proof-ingest'
+        static_configs:
+          - targets: ['{{ include "spec-to-proof.componentServiceName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}:{{ .Values.ingest.service.port | default 8080 }}']
+
+      - job_name: 'spec-to-proof-proof'
+        static_configs:
+          - targets: ['{{ include "spec-to-proof.componentServiceName" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}:{{ .Values.proof.service.port | default 8080 }}']
+
+      - job_name: 'spec-to-proof-platform'
+        static_configs:
+          - targets: ['{{ include "spec-to-proof.componentServiceName" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}:{{ .Values.platform.service.port | default 8080 }}']
+
+      - job_name: 'spec-to-proof-ui'
+        static_configs:
+          - targets: ['{{ include "spec-to-proof.componentServiceName" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) }}:{{ .Values.ui.service.port | default 3000 }}']
+
+  alerting_rules.yml: |
+    groups:
+      - name: spec-to-proof
+        rules:
+          - alert: SpecToProofHighCPUUsage
+            expr: container_cpu_usage_seconds_total{container=~"lean-farm|nlp|ingest|proof|platform|ui"} > 0.8
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage detected"
+              description: "Container {{ $labels.container }} is using more than 80% CPU"
+
+          - alert: SpecToProofHighMemoryUsage
+            expr: container_memory_usage_bytes{container=~"lean-farm|nlp|ingest|proof|platform|ui"} / container_spec_memory_limit_bytes{container=~"lean-farm|nlp|ingest|proof|platform|ui"} > 0.8
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage detected"
+              description: "Container {{ $labels.container }} is using more than 80% memory"
+
+          - alert: SpecToProofPodDown
+            expr: up{job=~"spec-to-proof.*"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod is down"
+              description: "Pod {{ $labels.pod }} is down"
+
+          - alert: SpecToProofHighErrorRate
+            expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High error rate detected"
+              description: "Error rate is above 5% for the last 5 minutes"
+{{- end }} 

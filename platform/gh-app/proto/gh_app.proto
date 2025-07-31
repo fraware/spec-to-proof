@@ -1,0 +1,283 @@
+syntax = "proto3";
+
+package spec_to_proof.gh_app.v1;
+
+import "google/protobuf/timestamp.proto";
+import "spec_to_proof.proto";
+
+option go_package = "github.com/spec-to-proof/gh-app/proto/v1;ghappv1";
+option java_multiple_files = true;
+option java_package = "com.spec_to_proof.gh_app.v1";
+
+// GitHub App webhook event types
+enum WebhookEventType {
+  WEBHOOK_EVENT_TYPE_UNSPECIFIED = 0;
+  WEBHOOK_EVENT_TYPE_PULL_REQUEST = 1;
+  WEBHOOK_EVENT_TYPE_PUSH = 2;
+  WEBHOOK_EVENT_TYPE_ISSUE = 3;
+  WEBHOOK_EVENT_TYPE_COMMIT_COMMENT = 4;
+}
+
+// Pull request action types
+enum PullRequestAction {
+  PULL_REQUEST_ACTION_UNSPECIFIED = 0;
+  PULL_REQUEST_ACTION_OPENED = 1;
+  PULL_REQUEST_ACTION_SYNCHRONIZE = 2;
+  PULL_REQUEST_ACTION_REOPENED = 3;
+  PULL_REQUEST_ACTION_CLOSED = 4;
+  PULL_REQUEST_ACTION_MERGED = 5;
+}
+
+// Badge status types
+enum BadgeStatus {
+  BADGE_STATUS_UNSPECIFIED = 0;
+  BADGE_STATUS_PENDING = 1;
+  BADGE_STATUS_SUCCESS = 2;
+  BADGE_STATUS_FAILURE = 3;
+  BADGE_STATUS_ERROR = 4;
+}
+
+// GitHub repository information
+message GitHubRepository {
+  string id = 1;
+  string name = 2;
+  string full_name = 3;
+  string owner = 4;
+  bool private = 5;
+  string default_branch = 6;
+  string html_url = 7;
+  string clone_url = 8;
+  string ssh_url = 9;
+}
+
+// GitHub pull request information
+message GitHubPullRequest {
+  string id = 1;
+  string number = 2;
+  string title = 3;
+  string body = 4;
+  string state = 5;
+  bool draft = 6;
+  bool merged = 7;
+  bool mergeable = 8;
+  string mergeable_state = 9;
+  string head_sha = 10;
+  string base_sha = 11;
+  GitHubRepository repository = 12;
+  GitHubUser user = 13;
+  repeated GitHubUser assignees = 14;
+  repeated GitHubUser requested_reviewers = 15;
+  repeated GitHubLabel labels = 16;
+  google.protobuf.Timestamp created_at = 17;
+  google.protobuf.Timestamp updated_at = 18;
+  google.protobuf.Timestamp closed_at = 19;
+  google.protobuf.Timestamp merged_at = 20;
+}
+
+// GitHub user information
+message GitHubUser {
+  string id = 1;
+  string login = 2;
+  string name = 3;
+  string email = 4;
+  string avatar_url = 5;
+  string type = 6;
+  bool site_admin = 7;
+}
+
+// GitHub label information
+message GitHubLabel {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string color = 4;
+  bool default = 5;
+}
+
+// GitHub commit information
+message GitHubCommit {
+  string sha = 1;
+  string message = 2;
+  string author_name = 3;
+  string author_email = 4;
+  string committer_name = 5;
+  string committer_email = 6;
+  google.protobuf.Timestamp authored_at = 7;
+  google.protobuf.Timestamp committed_at = 8;
+  repeated string parents = 9;
+  string tree_sha = 10;
+  string url = 11;
+  string html_url = 12;
+}
+
+// Webhook payload for pull request events
+message PullRequestWebhookPayload {
+  string action = 1;
+  GitHubPullRequest pull_request = 2;
+  GitHubRepository repository = 3;
+  GitHubUser sender = 4;
+  string installation_id = 5;
+  repeated string changed_files = 6;
+  repeated GitHubCommit commits = 7;
+}
+
+// Webhook payload for push events
+message PushWebhookPayload {
+  string ref = 1;
+  string before = 2;
+  string after = 3;
+  bool created = 4;
+  bool deleted = 5;
+  bool forced = 6;
+  string base_ref = 7;
+  string compare = 8;
+  repeated GitHubCommit commits = 9;
+  GitHubCommit head_commit = 10;
+  GitHubRepository repository = 11;
+  GitHubUser sender = 12;
+  string installation_id = 13;
+}
+
+// Badge status request
+message BadgeStatusRequest {
+  string repository_id = 1;
+  string pull_request_id = 2;
+  string commit_sha = 3;
+  repeated string spec_document_ids = 4;
+  string installation_id = 5;
+  string app_id = 6;
+}
+
+// Badge status response
+message BadgeStatusResponse {
+  BadgeStatus status = 1;
+  string message = 2;
+  string target_url = 3;
+  string description = 4;
+  string context = 5;
+  repeated ProofArtifactReference proof_artifacts = 6;
+  repeated SigstoreEntry sigstore_entries = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// Proof artifact reference with verification info
+message ProofArtifactReference {
+  string artifact_id = 1;
+  string spec_document_id = 2;
+  string content_hash = 3;
+  string proof_hash = 4;
+  string rekor_entry_id = 5;
+  string fulcio_certificate = 6;
+  google.protobuf.Timestamp proven_at = 7;
+  string status = 8;
+  string error_message = 9;
+}
+
+// Sigstore entry information
+message SigstoreEntry {
+  string entry_id = 1;
+  string log_index = 2;
+  string integrated_time = 3;
+  string log_id = 4;
+  string rekor_entry_url = 5;
+  string fulcio_certificate_url = 6;
+  string oidc_issuer = 7;
+  string oidc_identity = 8;
+  string signature = 9;
+  string public_key = 10;
+  string artifact_hash = 11;
+  string artifact_type = 12;
+}
+
+// GitHub App configuration
+message GitHubAppConfig {
+  string app_id = 1;
+  string private_key = 2;
+  string webhook_secret = 3;
+  string installation_id = 4;
+  string client_id = 5;
+  string client_secret = 6;
+  repeated string permissions = 7;
+  repeated string events = 8;
+  string base_url = 9;
+  string upload_url = 10;
+  string api_version = 11;
+}
+
+// Webhook verification request
+message WebhookVerificationRequest {
+  string payload = 1;
+  string signature = 2;
+  string webhook_secret = 3;
+}
+
+// Webhook verification response
+message WebhookVerificationResponse {
+  bool valid = 1;
+  string error_message = 2;
+  string event_type = 3;
+  string delivery_id = 4;
+}
+
+// GitHub App service
+service GitHubAppService {
+  // Process webhook events from GitHub
+  rpc ProcessWebhook(ProcessWebhookRequest) returns (ProcessWebhookResponse);
+  
+  // Update badge status for a pull request
+  rpc UpdateBadgeStatus(BadgeStatusRequest) returns (BadgeStatusResponse);
+  
+  // Verify webhook signature
+  rpc VerifyWebhook(WebhookVerificationRequest) returns (WebhookVerificationResponse);
+  
+  // Get proof artifacts for a commit
+  rpc GetProofArtifacts(GetProofArtifactsRequest) returns (GetProofArtifactsResponse);
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Process webhook request
+message ProcessWebhookRequest {
+  string payload = 1;
+  string signature = 2;
+  string event_type = 3;
+  string delivery_id = 4;
+  string installation_id = 5;
+}
+
+// Process webhook response
+message ProcessWebhookResponse {
+  bool success = 1;
+  string message = 2;
+  repeated BadgeStatusResponse badge_updates = 3;
+  repeated string processed_events = 4;
+}
+
+// Get proof artifacts request
+message GetProofArtifactsRequest {
+  string repository_id = 1;
+  string commit_sha = 2;
+  repeated string spec_document_ids = 3;
+}
+
+// Get proof artifacts response
+message GetProofArtifactsResponse {
+  repeated ProofArtifactReference artifacts = 1;
+  int32 total_count = 2;
+  int32 proven_count = 3;
+  int32 failed_count = 4;
+  int32 pending_count = 5;
+}
+
+// Health check request
+message HealthCheckRequest {}
+
+// Health check response
+message HealthCheckResponse {
+  string status = 1;
+  string version = 2;
+  string uptime = 3;
+  map<string, string> checks = 4;
+} 

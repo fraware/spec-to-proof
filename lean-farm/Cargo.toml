@@ -1,0 +1,168 @@
+[package]
+name = "lean-farm"
+version = "1.0.0"
+edition = "2021"
+authors = ["Spec-to-Proof Team <team@spec-to-proof.com>"]
+description = "A secure, horizontally scalable Kubernetes job runner for Lean theorem proving"
+license = "Apache-2.0"
+repository = "https://github.com/spec-to-proof/lean-farm"
+keywords = ["lean", "theorem-proving", "formal-verification", "proof-farm", "kubernetes"]
+categories = ["science", "system-programming"]
+
+[dependencies]
+# Core async runtime
+tokio = { version = "1.0", features = ["full"] }
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# CLI argument parsing
+clap = { version = "4.0", features = ["derive"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# HTTP server
+axum = "0.7"
+hyper = "1.0"
+
+# AWS SDK for S3
+aws-sdk-s3 = "1.0"
+aws-config = "1.0"
+
+# MinIO client
+minio = "0.12"
+
+# Docker client
+bollard = "0.15"
+
+# UUID generation
+uuid = { version = "1.0", features = ["v4"] }
+
+# SHA256 hashing
+sha2 = "0.10"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Configuration
+config = "0.13"
+
+# Time utilities
+chrono = { version = "0.4", features = ["serde"] }
+
+# Metrics and monitoring
+prometheus = "0.13"
+prometheus_client = "0.22"
+
+# Security and cryptography
+ring = "0.17"
+base64 = "0.21"
+
+# Network utilities
+reqwest = { version = "0.11", features = ["json"] }
+
+# File system operations
+walkdir = "2.3"
+
+# Process management
+sysinfo = "0.29"
+
+# YAML parsing
+yaml-rust = "0.4"
+
+# Build information
+vergen = { version = "8.0", features = ["build", "git", "gitcl"] }
+
+# Futures utilities
+futures = "0.3"
+
+# Protobuf
+prost = "0.12"
+prost-types = "0.12"
+tonic = "0.10"
+
+# Database (for job persistence)
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "sqlite"] }
+
+# Job queue
+redis = { version = "0.23", features = ["tokio-comp"] }
+
+# Health checks
+health = "0.6"
+
+# Rate limiting
+governor = "0.6"
+
+# Circuit breaker
+failsafe = "0.7"
+
+# Retry logic
+backoff = "0.4"
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+
+# Testing
+#[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.11"
+wiremock = "0.5"
+testcontainers = "0.15"
+
+[features]
+default = ["full"]
+full = [
+    "security",
+    "metrics",
+    "health",
+    "docker",
+    "kubernetes",
+    "aws",
+    "minio",
+    "redis",
+    "postgres",
+    "sqlite"
+]
+security = [
+    "ring",
+    "base64",
+    "validator"
+]
+metrics = [
+    "prometheus",
+    "prometheus_client"
+]
+health = ["health"]
+docker = ["bollard"]
+kubernetes = []
+aws = ["aws-sdk-s3", "aws-config"]
+minio = ["minio"]
+redis = ["redis"]
+postgres = ["sqlx/postgres"]
+sqlite = ["sqlx/sqlite"]
+
+[build-dependencies]
+vergen = { version = "8.0", features = ["build", "git", "gitcl"] }
+
+[[bin]]
+name = "lean-farm"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.test]
+opt-level = 1
+debug = true 

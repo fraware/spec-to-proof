@@ -1,0 +1,229 @@
+groups:
+  - name: spec-to-proof-critical
+    rules:
+      # Proof Failure Rate > 5% for 5 minutes
+      - alert: ProofFailureRate
+        expr: rate(proof_failures_total[5m]) / rate(proof_attempts_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          business_hours_only: "false"
+        annotations:
+          summary: "Proof failure rate is {{ $value | humanizePercentage }}"
+          description: "Proof failure rate has exceeded 5% for 5 minutes. This indicates a significant issue with proof generation."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/proof-failure-rate"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/proof-metrics"
+
+      # Drift Backlog > 100 items
+      - alert: DriftBacklogOverflow
+        expr: drift_backlog_size > 100
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          business_hours_only: "false"
+        annotations:
+          summary: "Drift backlog has {{ $value }} items"
+          description: "Drift backlog has exceeded 100 items, indicating processing bottleneck."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/drift-backlog-overflow"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/drift-metrics"
+
+      # Service Unavailable (Blackbox)
+      - alert: ServiceUnavailable
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          business_hours_only: "false"
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "Service is not responding to health checks."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/service-unavailable"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/blackbox-metrics"
+
+      # API Latency P99 > 90 seconds
+      - alert: APILatencyCritical
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 90
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          business_hours_only: "false"
+        annotations:
+          summary: "P99 API latency is {{ $value }}s"
+          description: "P99 API latency has exceeded 90 seconds."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/high-latency"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/api-metrics"
+
+      # Cost Threshold Exceeded
+      - alert: CostThresholdCritical
+        expr: monthly_cost_usd > 15000
+        for: 1h
+        labels:
+          severity: critical
+          team: finance
+          business_hours_only: "true"
+        annotations:
+          summary: "Monthly cost is ${{ $value }}"
+          description: "Monthly cost has exceeded $15,000."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/cost-threshold"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/cost-metrics"
+
+  - name: spec-to-proof-warning
+    rules:
+      # P99 Latency > 60 seconds (warning threshold)
+      - alert: HighLatency
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 60
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          business_hours_only: "true"
+        annotations:
+          summary: "P99 latency is {{ $value }}s"
+          description: "P99 latency has exceeded 60 seconds."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/high-latency"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/api-metrics"
+
+      # Error Rate > 2% for 5 minutes
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          business_hours_only: "true"
+        annotations:
+          summary: "Error rate is {{ $value | humanizePercentage }}"
+          description: "Error rate has exceeded 2% for 5 minutes."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/high-error-rate"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/error-metrics"
+
+      # CPU Usage > 80%
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          business_hours_only: "true"
+        annotations:
+          summary: "CPU usage is {{ $value }}%"
+          description: "CPU usage has exceeded 80%."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/resource-exhaustion"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/resource-metrics"
+
+      # Memory Usage > 80%
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          business_hours_only: "true"
+        annotations:
+          summary: "Memory usage is {{ $value }}%"
+          description: "Memory usage has exceeded 80%."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/resource-exhaustion"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/resource-metrics"
+
+      # Drift Backlog > 50 items (warning threshold)
+      - alert: DriftBacklogWarning
+        expr: drift_backlog_size > 50
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          business_hours_only: "true"
+        annotations:
+          summary: "Drift backlog has {{ $value }} items"
+          description: "Drift backlog has exceeded 50 items."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/drift-backlog-overflow"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/drift-metrics"
+
+      # Proof Failure Rate > 2% (warning threshold)
+      - alert: ProofFailureRateWarning
+        expr: rate(proof_failures_total[5m]) / rate(proof_attempts_total[5m]) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          business_hours_only: "true"
+        annotations:
+          summary: "Proof failure rate is {{ $value | humanizePercentage }}"
+          description: "Proof failure rate has exceeded 2% for 5 minutes."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/proof-failure-rate"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/proof-metrics"
+
+  - name: spec-to-proof-info
+    rules:
+      # Cost Threshold (Monthly) - Info level
+      - alert: CostThreshold
+        expr: monthly_cost_usd > 10000
+        for: 1h
+        labels:
+          severity: info
+          team: finance
+          business_hours_only: "true"
+        annotations:
+          summary: "Monthly cost is ${{ $value }}"
+          description: "Monthly cost has exceeded $10,000."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/cost-threshold"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/cost-metrics"
+
+      # Test Coverage < 90%
+      - alert: CoverageDrop
+        expr: test_coverage_percentage < 90
+        for: 1h
+        labels:
+          severity: info
+          team: platform
+          business_hours_only: "true"
+        annotations:
+          summary: "Test coverage is {{ $value }}%"
+          description: "Test coverage has dropped below 90%."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/coverage-drop"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/quality-metrics"
+
+      # Security Scan Failures
+      - alert: SecurityScanFailures
+        expr: security_scan_failures_total > 0
+        for: 1h
+        labels:
+          severity: info
+          team: security
+          business_hours_only: "true"
+        annotations:
+          summary: "{{ $value }} security scan failures"
+          description: "Security scans are failing."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/security-scan-failures"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/security-metrics"
+
+      # Low Success Rate
+      - alert: LowSuccessRate
+        expr: rate(http_requests_total{status=~"2.."}[5m]) / rate(http_requests_total[5m]) < 0.95
+        for: 5m
+        labels:
+          severity: info
+          team: platform
+          business_hours_only: "true"
+        annotations:
+          summary: "Success rate is {{ $value | humanizePercentage }}"
+          description: "Success rate has dropped below 95%."
+          runbook_url: "https://docs.spec-to-proof.com/runbooks/low-success-rate"
+          dashboard_url: "https://grafana.spec-to-proof.com/d/api-metrics"
+
+  - name: spec-to-proof-business-hours
+    rules:
+      # Business Hours Only Alerts (9 AM - 6 PM EST)
+      - alert: BusinessHoursOnly
+        expr: hour() >= 9 and hour() < 18
+        for: 0m
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "Business hours alert"
+          description: "This alert only fires during business hours (9 AM - 6 PM EST)." 

@@ -1,0 +1,487 @@
+{{- if .Values.leanFarm.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spec-to-proof.componentDeploymentName" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "spec-to-proof.componentLabels" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  replicas: {{ .Values.leanFarm.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+      {{- include "spec-to-proof.componentPodSecurityContext" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+    spec:
+      serviceAccountName: {{ include "spec-to-proof.componentServiceAccountName" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+      {{- include "spec-to-proof.componentSecurityContext" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      containers:
+        - name: lean-farm
+          image: {{ include "spec-to-proof.componentImage" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+          imagePullPolicy: {{ include "spec-to-proof.imagePullPolicy" . }}
+          {{- include "spec-to-proof.componentContainerSecurityContext" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentResources" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentProbes" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentVolumeMounts" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          env:
+            {{- include "spec-to-proof.componentEnv" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 12 }}
+            - name: LEAN_FARM_CONFIG_PATH
+              value: "/etc/lean-farm/config.yaml"
+            - name: LEAN_FARM_LOG_LEVEL
+              value: {{ .Values.logging.level | default "info" }}
+            - name: LEAN_FARM_LOG_FORMAT
+              value: {{ .Values.logging.format | default "json" }}
+            - name: LEAN_FARM_METRICS_PORT
+              value: "9090"
+            - name: LEAN_FARM_METRICS_PATH
+              value: "/metrics"
+            {{- if .Values.leanFarm.lean }}
+            - name: LEAN_VERSION
+              value: {{ .Values.leanFarm.lean.version }}
+            - name: LEAN_TIMEOUT_SECONDS
+              value: {{ .Values.leanFarm.lean.timeoutSeconds | quote }}
+            {{- end }}
+            {{- if .Values.leanFarm.storage }}
+            - name: S3_BUCKET
+              value: {{ .Values.leanFarm.storage.s3Bucket }}
+            - name: AWS_REGION
+              value: {{ .Values.leanFarm.storage.region }}
+            {{- end }}
+            {{- if .Values.secrets.aws }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: aws-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: aws-secret-access-key
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.leanFarm.service.port | default 8080 }}
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+      {{- include "spec-to-proof.componentVolumes" (dict "component" "leanFarm" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
+{{- if .Values.nlp.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spec-to-proof.componentDeploymentName" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "spec-to-proof.componentLabels" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  replicas: {{ .Values.nlp.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+      {{- include "spec-to-proof.componentPodSecurityContext" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+    spec:
+      serviceAccountName: {{ include "spec-to-proof.componentServiceAccountName" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+      {{- include "spec-to-proof.componentSecurityContext" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      containers:
+        - name: nlp
+          image: {{ include "spec-to-proof.componentImage" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+          imagePullPolicy: {{ include "spec-to-proof.imagePullPolicy" . }}
+          {{- include "spec-to-proof.componentContainerSecurityContext" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentResources" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentProbes" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentVolumeMounts" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          env:
+            {{- include "spec-to-proof.componentEnv" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 12 }}
+            - name: NLP_LOG_LEVEL
+              value: {{ .Values.logging.level | default "info" }}
+            - name: NLP_LOG_FORMAT
+              value: {{ .Values.logging.format | default "json" }}
+            {{- if .Values.nlp.claude }}
+            - name: CLAUDE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: claude-api-key
+            - name: CLAUDE_MODEL
+              value: {{ .Values.nlp.claude.model }}
+            - name: CLAUDE_MAX_TOKENS
+              value: {{ .Values.nlp.claude.maxTokens | quote }}
+            - name: CLAUDE_TEMPERATURE
+              value: {{ .Values.nlp.claude.temperature | quote }}
+            {{- end }}
+            {{- if .Values.nlp.cache }}
+            - name: CACHE_TTL_SECONDS
+              value: {{ .Values.nlp.cache.ttlSeconds | quote }}
+            {{- end }}
+            {{- if .Values.secrets.aws }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: aws-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: aws-secret-access-key
+            {{- end }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.nlp.service.port | default 50051 }}
+              protocol: TCP
+      {{- include "spec-to-proof.componentVolumes" (dict "component" "nlp" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
+{{- if .Values.ingest.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spec-to-proof.componentDeploymentName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "spec-to-proof.componentLabels" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  replicas: {{ .Values.ingest.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+      {{- include "spec-to-proof.componentPodSecurityContext" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+    spec:
+      serviceAccountName: {{ include "spec-to-proof.componentServiceAccountName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+      {{- include "spec-to-proof.componentSecurityContext" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      containers:
+        - name: ingest
+          image: {{ include "spec-to-proof.componentImage" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+          imagePullPolicy: {{ include "spec-to-proof.imagePullPolicy" . }}
+          {{- include "spec-to-proof.componentContainerSecurityContext" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentResources" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentProbes" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentVolumeMounts" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          env:
+            {{- include "spec-to-proof.componentEnv" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 12 }}
+            - name: INGEST_LOG_LEVEL
+              value: {{ .Values.logging.level | default "info" }}
+            - name: INGEST_LOG_FORMAT
+              value: {{ .Values.logging.format | default "json" }}
+            {{- if .Values.ingest.connectors }}
+            {{- if .Values.ingest.connectors.jira }}
+            - name: JIRA_POLL_INTERVAL_SECONDS
+              value: {{ .Values.ingest.connectors.jira.pollIntervalSeconds | quote }}
+            {{- end }}
+            {{- if .Values.ingest.connectors.confluence }}
+            - name: CONFLUENCE_POLL_INTERVAL_SECONDS
+              value: {{ .Values.ingest.connectors.confluence.pollIntervalSeconds | quote }}
+            {{- end }}
+            {{- if .Values.ingest.connectors.gdocs }}
+            - name: GDOCS_POLL_INTERVAL_SECONDS
+              value: {{ .Values.ingest.connectors.gdocs.pollIntervalSeconds | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.secrets.oauth2 }}
+            {{- if .Values.secrets.oauth2.jira }}
+            - name: JIRA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: jira-client-id
+            - name: JIRA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: jira-client-secret
+            {{- end }}
+            {{- if .Values.secrets.oauth2.confluence }}
+            - name: CONFLUENCE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: confluence-client-id
+            - name: CONFLUENCE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: confluence-client-secret
+            {{- end }}
+            {{- if .Values.secrets.oauth2.gdocs }}
+            - name: GDOCS_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: gdocs-client-id
+            - name: GDOCS_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: gdocs-client-secret
+            {{- end }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ingest.service.port | default 8080 }}
+              protocol: TCP
+      {{- include "spec-to-proof.componentVolumes" (dict "component" "ingest" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
+{{- if .Values.proof.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spec-to-proof.componentDeploymentName" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "spec-to-proof.componentLabels" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  replicas: {{ .Values.proof.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+      {{- include "spec-to-proof.componentPodSecurityContext" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+    spec:
+      serviceAccountName: {{ include "spec-to-proof.componentServiceAccountName" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+      {{- include "spec-to-proof.componentSecurityContext" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      containers:
+        - name: proof
+          image: {{ include "spec-to-proof.componentImage" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+          imagePullPolicy: {{ include "spec-to-proof.imagePullPolicy" . }}
+          {{- include "spec-to-proof.componentContainerSecurityContext" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentResources" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentProbes" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentVolumeMounts" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          env:
+            {{- include "spec-to-proof.componentEnv" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 12 }}
+            - name: PROOF_LOG_LEVEL
+              value: {{ .Values.logging.level | default "info" }}
+            - name: PROOF_LOG_FORMAT
+              value: {{ .Values.logging.format | default "json" }}
+            {{- if .Values.proof.lean }}
+            - name: LEAN_VERSION
+              value: {{ .Values.proof.lean.version }}
+            - name: LEAN_TIMEOUT_SECONDS
+              value: {{ .Values.proof.lean.timeoutSeconds | quote }}
+            {{- end }}
+            {{- if .Values.proof.storage }}
+            - name: S3_BUCKET
+              value: {{ .Values.proof.storage.s3Bucket }}
+            - name: AWS_REGION
+              value: {{ .Values.proof.storage.region }}
+            {{- end }}
+            {{- if .Values.secrets.aws }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: aws-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: aws-secret-access-key
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.proof.service.port | default 8080 }}
+              protocol: TCP
+      {{- include "spec-to-proof.componentVolumes" (dict "component" "proof" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
+{{- if .Values.platform.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spec-to-proof.componentDeploymentName" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "spec-to-proof.componentLabels" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  replicas: {{ .Values.platform.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+      {{- include "spec-to-proof.componentPodSecurityContext" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+    spec:
+      serviceAccountName: {{ include "spec-to-proof.componentServiceAccountName" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+      {{- include "spec-to-proof.componentSecurityContext" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      containers:
+        - name: platform
+          image: {{ include "spec-to-proof.componentImage" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+          imagePullPolicy: {{ include "spec-to-proof.imagePullPolicy" . }}
+          {{- include "spec-to-proof.componentContainerSecurityContext" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentResources" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentProbes" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentVolumeMounts" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          env:
+            {{- include "spec-to-proof.componentEnv" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 12 }}
+            - name: PLATFORM_LOG_LEVEL
+              value: {{ .Values.logging.level | default "info" }}
+            - name: PLATFORM_LOG_FORMAT
+              value: {{ .Values.logging.format | default "json" }}
+            {{- if .Values.platform.github }}
+            - name: GITHUB_APP_ID
+              value: {{ .Values.platform.github.appId }}
+            - name: GITHUB_INSTALLATION_ID
+              value: {{ .Values.platform.github.installationId }}
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: github-webhook-secret
+            - name: GITHUB_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spec-to-proof.componentSecretName" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}
+                  key: github-private-key
+            {{- end }}
+            {{- if .Values.platform.sigstore }}
+            - name: SIGSTORE_REKOR_URL
+              value: {{ .Values.platform.sigstore.rekorUrl }}
+            - name: SIGSTORE_FULCIO_URL
+              value: {{ .Values.platform.sigstore.fulcioUrl }}
+            - name: SIGSTORE_OIDC_ISSUER
+              value: {{ .Values.platform.sigstore.oidcIssuer }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.platform.service.port | default 8080 }}
+              protocol: TCP
+      {{- include "spec-to-proof.componentVolumes" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
+{{- if .Values.ui.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spec-to-proof.componentDeploymentName" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "spec-to-proof.componentLabels" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  replicas: {{ .Values.ui.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "spec-to-proof.componentSelectorLabels" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+      {{- include "spec-to-proof.componentPodSecurityContext" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+    spec:
+      serviceAccountName: {{ include "spec-to-proof.componentServiceAccountName" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) }}
+      {{- include "spec-to-proof.componentSecurityContext" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      containers:
+        - name: ui
+          image: {{ include "spec-to-proof.componentImage" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) }}
+          imagePullPolicy: {{ include "spec-to-proof.imagePullPolicy" . }}
+          {{- include "spec-to-proof.componentContainerSecurityContext" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentResources" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentProbes" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          {{- include "spec-to-proof.componentVolumeMounts" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 10 }}
+          env:
+            {{- include "spec-to-proof.componentEnv" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 12 }}
+            - name: UI_LOG_LEVEL
+              value: {{ .Values.logging.level | default "info" }}
+            - name: UI_LOG_FORMAT
+              value: {{ .Values.logging.format | default "json" }}
+            - name: NEXT_PUBLIC_API_URL
+              value: "http://{{ include "spec-to-proof.componentServiceName" (dict "component" "platform" "Values" .Values "Release" .Release "Chart" .Chart) }}:{{ .Values.platform.service.port | default 8080 }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.ui.service.port | default 3000 }}
+              protocol: TCP
+      {{- include "spec-to-proof.componentVolumes" (dict "component" "ui" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }} 

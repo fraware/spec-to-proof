@@ -1,0 +1,36 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/fraware/spec-to-proof/gen
+plugins:
+  - plugin: es
+    out: gen/es
+    opt: target=ts
+  - plugin: es
+    out: gen/es
+    opt: target=js
+  - plugin: ts-proto
+    out: gen/ts
+    opt: esModuleInterop=true,useOptionals=messages,useDate=false
+  - plugin: buf.build/protocolbuffers/go
+    out: gen/go
+    opt: paths=source_relative
+  - plugin: buf.build/bufbuild/connect-go
+    out: gen/go
+    opt: paths=source_relative
+  - plugin: buf.build/bufbuild/connect-es
+    out: gen/es
+    opt: target=ts
+  - plugin: buf.build/bufbuild/connect-es
+    out: gen/es
+    opt: target=js
+  - plugin: buf.build/community/neoeinstein-prost
+    out: gen/rust
+    opt: bytes=bytes,file=file
+  - plugin: buf.build/community/neoeinstein-prost
+    out: gen/rust
+    opt: bytes=bytes,file=file,grpc
+  - plugin: buf.build/community/neoeinstein-prost
+    out: gen/rust
+    opt: bytes=bytes,file=file,grpc,serde 

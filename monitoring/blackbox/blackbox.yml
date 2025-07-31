@@ -1,0 +1,234 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200, 201, 202, 203, 204]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Accept: "application/json"
+
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: POST
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200, 201, 202, 203, 204]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Content-Type: "application/json"
+        Accept: "application/json"
+      body: '{"test": "data"}'
+
+  # Spec-to-Proof API Health Check
+  spec_to_proof_health:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Accept: "application/json"
+      fail_if_body_matches_regexp:
+        - "error"
+        - "unhealthy"
+        - "down"
+
+  # Spec-to-Proof API Invariant Extraction
+  spec_to_proof_invariant_extraction:
+    prober: http
+    timeout: 30s
+    http:
+      method: POST
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200, 201]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Content-Type: "application/json"
+        Accept: "application/json"
+      body: |
+        {
+          "content": "The system must maintain data consistency across all operations.",
+          "source_type": "test",
+          "confidence_threshold": 0.7,
+          "max_invariants": 5
+        }
+      fail_if_body_matches_regexp:
+        - "error"
+        - "timeout"
+        - "failed"
+
+  # Spec-to-Proof API Proof Generation
+  spec_to_proof_proof_generation:
+    prober: http
+    timeout: 60s
+    http:
+      method: POST
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200, 201, 202]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Content-Type: "application/json"
+        Accept: "application/json"
+      body: |
+        {
+          "theorem": "forall x : Nat, x + 0 = x",
+          "options": {
+            "timeout_seconds": 30,
+            "max_memory_mb": 512
+          }
+        }
+      fail_if_body_matches_regexp:
+        - "error"
+        - "timeout"
+        - "failed"
+
+  # Spec-to-Proof API Badge Status
+  spec_to_proof_badge_status:
+    prober: http
+    timeout: 15s
+    http:
+      method: GET
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Accept: "application/json"
+      fail_if_body_matches_regexp:
+        - "error"
+        - "unavailable"
+
+  # GitHub App Webhook Endpoint
+  github_app_webhook:
+    prober: http
+    timeout: 10s
+    http:
+      method: POST
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200, 201, 202]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Content-Type: "application/json"
+        Accept: "application/json"
+        X-GitHub-Event: "ping"
+      body: |
+        {
+          "zen": "Blackbox test",
+          "hook_id": 123456,
+          "hook": {
+            "type": "Repository",
+            "id": 123456,
+            "name": "web",
+            "active": true,
+            "events": ["push"],
+            "config": {
+              "url": "https://example.com/webhook",
+              "content_type": "json"
+            }
+          },
+          "repository": {
+            "id": 123456,
+            "name": "test-repo",
+            "full_name": "test/test-repo"
+          }
+        }
+
+  # Lean Farm Health Check
+  lean_farm_health:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Accept: "application/json"
+      fail_if_body_matches_regexp:
+        - "error"
+        - "unhealthy"
+        - "down"
+
+  # NLP Service Health Check
+  nlp_service_health:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Accept: "application/json"
+      fail_if_body_matches_regexp:
+        - "error"
+        - "unhealthy"
+        - "down"
+
+  # Ingest Service Health Check
+  ingest_service_health:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      headers:
+        User-Agent: "Prometheus/Blackbox Exporter"
+        Accept: "application/json"
+      fail_if_body_matches_regexp:
+        - "error"
+        - "unhealthy"
+        - "down"
+
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+
+  dns:
+    prober: dns
+    timeout: 5s
+    dns:
+      preferred_ip_protocol: "ip4"
+      query_name: "kubernetes.default.svc.cluster.local"
+
+  grpc:
+    prober: grpc
+    timeout: 5s
+    grpc:
+      preferred_ip_protocol: "ip4"
+      tls: false
+      tls_config:
+        insecure_skip_verify: true 

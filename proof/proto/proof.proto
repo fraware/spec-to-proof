@@ -1,0 +1,245 @@
+syntax = "proto3";
+
+package spec_to_proof.proof.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Service for converting invariants to Lean theorems and managing proofs
+service ProofService {
+  // Convert an InvariantSet to Lean theorem stubs
+  rpc CompileInvariantSet(CompileInvariantSetRequest) returns (CompileInvariantSetResponse);
+  
+  // Generate a complete proof for a Lean theorem using Claude
+  rpc GenerateProof(GenerateProofRequest) returns (GenerateProofResponse);
+  
+  // Stream Lean code to S3 with versioning
+  rpc StreamLeanCode(StreamLeanCodeRequest) returns (stream StreamLeanCodeResponse);
+  
+  // Health check endpoint
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message CompileInvariantSetRequest {
+  // The invariant set to compile
+  spec_to_proof.v1.InvariantSet invariant_set = 1;
+  
+  // Compilation options
+  CompilationOptions options = 2;
+}
+
+message CompilationOptions {
+  // Temperature for Claude calls (0.0 for determinism)
+  float temperature = 1;
+  
+  // Maximum tokens for Claude response
+  uint32 max_tokens = 2;
+  
+  // Seed for deterministic generation
+  uint64 seed = 3;
+  
+  // Proof strategy to use
+  string proof_strategy = 4;
+  
+  // Whether to include imports and dependencies
+  bool include_dependencies = 5;
+}
+
+message CompileInvariantSetResponse {
+  // Generated Lean theorems
+  repeated spec_to_proof.v1.LeanTheorem theorems = 1;
+  
+  // Compilation metadata
+  CompilationMetadata metadata = 2;
+  
+  // Any compilation errors
+  repeated string errors = 3;
+}
+
+message GenerateProofRequest {
+  // The Lean theorem to prove
+  spec_to_proof.v1.LeanTheorem theorem = 1;
+  
+  // Proof generation options
+  ProofOptions options = 2;
+}
+
+message ProofOptions {
+  // Temperature for Claude calls
+  float temperature = 1;
+  
+  // Maximum tokens for Claude response
+  uint32 max_tokens = 2;
+  
+  // Seed for deterministic generation
+  uint64 seed = 3;
+  
+  // Maximum proof attempts
+  uint32 max_attempts = 4;
+  
+  // Timeout in seconds
+  uint32 timeout_seconds = 5;
+}
+
+message GenerateProofResponse {
+  // The proven theorem
+  spec_to_proof.v1.LeanTheorem theorem = 1;
+  
+  // Proof artifact
+  spec_to_proof.v1.ProofArtifact proof_artifact = 2;
+  
+  // Generation metadata
+  ProofMetadata metadata = 3;
+}
+
+message StreamLeanCodeRequest {
+  // The Lean theorem to stream
+  spec_to_proof.v1.LeanTheorem theorem = 1;
+  
+  // S3 bucket configuration
+  S3Config s3_config = 2;
+  
+  // Versioning options
+  VersioningOptions versioning = 3;
+}
+
+message S3Config {
+  // S3 bucket name
+  string bucket_name = 1;
+  
+  // S3 key prefix
+  string key_prefix = 2;
+  
+  // AWS region
+  string region = 3;
+  
+  // Encryption settings
+  EncryptionConfig encryption = 4;
+}
+
+message EncryptionConfig {
+  // Server-side encryption algorithm
+  string sse_algorithm = 1;
+  
+  // KMS key ID (if using SSE-KMS)
+  string kms_key_id = 2;
+}
+
+message VersioningOptions {
+  // Versioning strategy
+  VersioningStrategy strategy = 1;
+  
+  // Custom version string
+  string custom_version = 2;
+  
+  // Whether to create immutable tags
+  bool create_tags = 3;
+}
+
+enum VersioningStrategy {
+  VERSIONING_STRATEGY_UNSPECIFIED = 0;
+  VERSIONING_STRATEGY_HASH = 1;
+  VERSIONING_STRATEGY_TIMESTAMP = 2;
+  VERSIONING_STRATEGY_SEQUENTIAL = 3;
+  VERSIONING_STRATEGY_CUSTOM = 4;
+}
+
+message StreamLeanCodeResponse {
+  // Upload status
+  UploadStatus status = 1;
+  
+  // S3 location
+  string s3_location = 2;
+  
+  // Version information
+  string version = 3;
+  
+  // Upload metadata
+  UploadMetadata metadata = 4;
+}
+
+enum UploadStatus {
+  UPLOAD_STATUS_UNSPECIFIED = 0;
+  UPLOAD_STATUS_STARTED = 1;
+  UPLOAD_STATUS_IN_PROGRESS = 2;
+  UPLOAD_STATUS_COMPLETED = 3;
+  UPLOAD_STATUS_FAILED = 4;
+}
+
+message UploadMetadata {
+  // File size in bytes
+  uint64 file_size = 1;
+  
+  // Content type
+  string content_type = 2;
+  
+  // Checksum
+  string checksum = 3;
+  
+  // Upload timestamp
+  google.protobuf.Timestamp uploaded_at = 4;
+}
+
+message CompilationMetadata {
+  // Compilation duration in milliseconds
+  uint64 duration_ms = 1;
+  
+  // Token usage
+  TokenUsage token_usage = 2;
+  
+  // Cost estimation
+  double estimated_cost = 3;
+  
+  // Compilation timestamp
+  google.protobuf.Timestamp compiled_at = 4;
+}
+
+message ProofMetadata {
+  // Proof generation duration in milliseconds
+  uint64 duration_ms = 1;
+  
+  // Token usage
+  TokenUsage token_usage = 2;
+  
+  // Cost estimation
+  double estimated_cost = 3;
+  
+  // Number of attempts
+  uint32 attempts = 4;
+  
+  // Proof generation timestamp
+  google.protobuf.Timestamp generated_at = 5;
+}
+
+message TokenUsage {
+  // Input tokens
+  uint32 input_tokens = 1;
+  
+  // Output tokens
+  uint32 output_tokens = 2;
+  
+  // Total tokens
+  uint32 total_tokens = 3;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  // Service status
+  ServiceStatus status = 1;
+  
+  // Service version
+  string version = 2;
+  
+  // Uptime in seconds
+  uint64 uptime_seconds = 3;
+  
+  // Health check timestamp
+  google.protobuf.Timestamp checked_at = 4;
+}
+
+enum ServiceStatus {
+  SERVICE_STATUS_UNSPECIFIED = 0;
+  SERVICE_STATUS_HEALTHY = 1;
+  SERVICE_STATUS_DEGRADED = 2;
+  SERVICE_STATUS_UNHEALTHY = 3;
+} 

@@ -1,0 +1,534 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Spec-to-Proof Domain Models",
+  "description": "JSON Schema for Spec-to-Proof platform domain models",
+  "type": "object",
+  "definitions": {
+    "DocumentStatus": {
+      "type": "string",
+      "enum": ["UNSPECIFIED", "DRAFT", "PUBLISHED", "ARCHIVED"],
+      "description": "Status of a specification document"
+    },
+    "InvariantStatus": {
+      "type": "string",
+      "enum": ["UNSPECIFIED", "EXTRACTED", "CONFIRMED", "REJECTED", "PROVEN", "FAILED"],
+      "description": "Status of an invariant"
+    },
+    "InvariantSetStatus": {
+      "type": "string",
+      "enum": ["UNSPECIFIED", "DRAFT", "REVIEW", "APPROVED", "PROVEN", "FAILED"],
+      "description": "Status of an invariant set"
+    },
+    "TheoremStatus": {
+      "type": "string",
+      "enum": ["UNSPECIFIED", "GENERATED", "COMPILING", "COMPILED", "PROVING", "PROVEN", "FAILED"],
+      "description": "Status of a Lean theorem"
+    },
+    "ProofStatus": {
+      "type": "string",
+      "enum": ["UNSPECIFIED", "PENDING", "RUNNING", "SUCCESS", "FAILED", "TIMEOUT", "ERROR"],
+      "description": "Status of a proof attempt"
+    },
+    "BadgeState": {
+      "type": "string",
+      "enum": ["UNSPECIFIED", "PENDING", "SUCCESS", "FAILURE", "ERROR"],
+      "description": "State of a GitHub badge"
+    },
+    "Priority": {
+      "type": "string",
+      "enum": ["UNSPECIFIED", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
+      "description": "Priority level"
+    },
+    "Variable": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Variable name"
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Variable type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Variable description"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement"
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Constraints on the variable"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ResourceUsage": {
+      "type": "object",
+      "required": ["cpuSeconds", "memoryBytes", "diskBytes", "networkBytes"],
+      "properties": {
+        "cpuSeconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "CPU usage in seconds"
+        },
+        "memoryBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Memory usage in bytes"
+        },
+        "diskBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Disk usage in bytes"
+        },
+        "networkBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Network usage in bytes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SpecDocument": {
+      "type": "object",
+      "required": ["id", "contentSha256", "sourceSystem", "title", "content"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Unique identifier for the document"
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "SHA256 hash of the document content"
+        },
+        "sourceSystem": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Source system identifier"
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Original document ID in the source system"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Document title"
+        },
+        "content": {
+          "type": "string",
+          "description": "Document content"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Document URL in the source system"
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Author/creator of the document"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the document was created"
+        },
+        "modifiedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the document was last modified"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Document metadata as key-value pairs"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Version of the document"
+        },
+        "status": {
+          "$ref": "#/definitions/DocumentStatus"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Invariant": {
+      "type": "object",
+      "required": ["id", "contentSha256", "description", "formalExpression"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Unique identifier for the invariant"
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "SHA256 hash of the invariant content"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable description of the invariant"
+        },
+        "formalExpression": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Formal mathematical expression of the invariant"
+        },
+        "naturalLanguage": {
+          "type": "string",
+          "description": "Natural language description"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Variable"
+          },
+          "description": "Variables used in the invariant"
+        },
+        "units": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Units for the variables"
+        },
+        "confidenceScore": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Confidence score from the NLP extraction"
+        },
+        "sourceDocumentId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Source document reference"
+        },
+        "extractedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the invariant was extracted"
+        },
+        "status": {
+          "$ref": "#/definitions/InvariantStatus"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags for categorization"
+        },
+        "priority": {
+          "$ref": "#/definitions/Priority"
+        }
+      },
+      "additionalProperties": false
+    },
+    "InvariantSet": {
+      "type": "object",
+      "required": ["id", "contentSha256", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Unique identifier for the invariant set"
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "SHA256 hash of the invariant set content"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the invariant set"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the invariant set"
+        },
+        "invariants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Invariant"
+          },
+          "description": "Invariants in this set"
+        },
+        "sourceDocumentIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "description": "Source document references"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the invariant set was created"
+        },
+        "modifiedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the invariant set was last modified"
+        },
+        "status": {
+          "$ref": "#/definitions/InvariantSetStatus"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LeanTheorem": {
+      "type": "object",
+      "required": ["id", "contentSha256", "theoremName", "leanCode"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Unique identifier for the theorem"
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "SHA256 hash of the theorem content"
+        },
+        "theoremName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Theorem name in Lean"
+        },
+        "leanCode": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Full Lean 4 code for the theorem"
+        },
+        "sourceInvariantId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Source invariant reference"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the theorem was generated"
+        },
+        "status": {
+          "$ref": "#/definitions/TheoremStatus"
+        },
+        "compilationErrors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Compilation errors (if any)"
+        },
+        "proofStrategy": {
+          "type": "string",
+          "description": "Proof strategy used"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Metadata about the theorem"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ProofArtifact": {
+      "type": "object",
+      "required": ["id", "contentSha256", "theoremId", "invariantId"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Unique identifier for the proof artifact"
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "SHA256 hash of the proof artifact content"
+        },
+        "theoremId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Reference to the theorem being proven"
+        },
+        "invariantId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Reference to the invariant being proven"
+        },
+        "status": {
+          "$ref": "#/definitions/ProofStatus"
+        },
+        "attemptedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the proof was attempted"
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How long the proof took (in milliseconds)"
+        },
+        "output": {
+          "type": "string",
+          "description": "Proof output (success or error messages)"
+        },
+        "logs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Proof logs"
+        },
+        "resourceUsage": {
+          "$ref": "#/definitions/ResourceUsage"
+        },
+        "proofStrategy": {
+          "type": "string",
+          "description": "Proof strategy used"
+        },
+        "confidenceScore": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Confidence score of the proof"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Metadata about the proof"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BadgeStatus": {
+      "type": "object",
+      "required": ["id", "contentSha256", "repoOwner", "repoName", "prNumber", "commitSha"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Unique identifier for the badge"
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "SHA256 hash of the badge content"
+        },
+        "repoOwner": {
+          "type": "string",
+          "minLength": 1,
+          "description": "GitHub repository owner"
+        },
+        "repoName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "GitHub repository name"
+        },
+        "prNumber": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Pull request number"
+        },
+        "commitSha": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{40}$",
+          "description": "Commit SHA"
+        },
+        "state": {
+          "$ref": "#/definitions/BadgeState"
+        },
+        "description": {
+          "type": "string",
+          "description": "Badge description"
+        },
+        "targetUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Target URL for the badge"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the badge was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the badge was last updated"
+        },
+        "proofArtifactIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "description": "Related proof artifacts"
+        },
+        "coveragePercentage": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 100.0,
+          "description": "Coverage percentage"
+        },
+        "invariantsProven": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of invariants proven"
+        },
+        "totalInvariants": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Total number of invariants"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "specDocument": {
+      "$ref": "#/definitions/SpecDocument"
+    },
+    "invariant": {
+      "$ref": "#/definitions/Invariant"
+    },
+    "invariantSet": {
+      "$ref": "#/definitions/InvariantSet"
+    },
+    "leanTheorem": {
+      "$ref": "#/definitions/LeanTheorem"
+    },
+    "proofArtifact": {
+      "$ref": "#/definitions/ProofArtifact"
+    },
+    "badgeStatus": {
+      "$ref": "#/definitions/BadgeStatus"
+    }
+  },
+  "additionalProperties": false
+} 

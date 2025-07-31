@@ -1,0 +1,14 @@
+version: v1
+name: buf.build/fraware/spec-to-proof
+deps:
+  - buf.build/googleapis/googleapis
+lint:
+  use:
+    - DEFAULT
+  except:
+    - PACKAGE_VERSION_SUFFIX
+breaking:
+  use:
+    - FILE
+  except:
+    - WIRE_JSON 
