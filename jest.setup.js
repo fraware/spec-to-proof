@@ -48,6 +48,13 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// Mock crypto.randomUUID for test environment
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
+  },
+});
+
 // Mock ResizeObserver
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),

@@ -40,6 +40,7 @@
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@types/bcryptjs": "^2.4.0",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
@@ -70,7 +71,9 @@
       "^@/(.*)$": "<rootDir>/platform/ui/src/$1"
     },
     "transform": {
-      "^.+\\.(ts|tsx)$": "ts-jest"
+      "^.+\\.(ts|tsx)$": ["ts-jest", {
+        "tsconfig": "platform/ui/tsconfig.json"
+      }]
     },
     "testMatch": [
       "**/__tests__/**/*.(ts|tsx)",
@@ -79,7 +82,13 @@
     "collectCoverageFrom": [
       "platform/ui/src/**/*.{ts,tsx}",
       "!platform/ui/src/**/*.d.ts"
-    ]
+    ],
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"],
+    "globals": {
+      "ts-jest": {
+        "tsconfig": "platform/ui/tsconfig.json"
+      }
+    }
   },
   "engines": {
     "node": ">=20.0.0",
