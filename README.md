@@ -22,7 +22,7 @@ Spec-to-Proof automatically extracts hidden invariants from plain English specif
 - **Drift Detection**: Automatic re-verification when specs change
 
 <p align="center">
-  <img src=".github/assets/Spec-to-Proof1.png" alt=" Logo" width="300"/>
+  <img src=".github/assets/Spec-to-Proof1.png" alt=" Logo" width="200"/>
 </p>
 
 ## Architecture
