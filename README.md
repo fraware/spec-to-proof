@@ -21,6 +21,10 @@ Spec-to-Proof automatically extracts hidden invariants from plain English specif
 - **Real-time Coverage**: Dashboard mapping user stories to formal guarantees
 - **Drift Detection**: Automatic re-verification when specs change
 
+<p align="center">
+  <img src=".github/assets/Spec-to-Proof1.png" alt=" Logo" width="300"/>
+</p>
+
 ## Architecture
 
 ```
