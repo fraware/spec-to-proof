@@ -70,7 +70,7 @@ Spec-to-Proof automatically extracts hidden invariants from plain English specif
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/fraware/spec-to-proof.git
+   git clone https://github.com/spec-to-proof.git
    cd spec-to-proof
    ```
 
